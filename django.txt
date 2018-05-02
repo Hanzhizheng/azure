@@ -1,0 +1,122 @@
+django使用upate是要优于save方式的.
+
+update() is converted directly to an SQL statement; it doesn't call save() on the model instances, and so the pre_save and post_save signals aren't emitted. If you want your signal receivers to be called, you should loop over the queryset, and for each model instance, make your changes and call save() yourself.
+
+django 上传文件xlrd处理
+serializer = self.get_serializer(data=request.data)
+serializer.is_valid(raise_exception=True)
+ifile = serializer.validated_data['ifile']
+workbook = xlrd.open_workbook(filename=None, file_contents=ifile.read())
+
+理解aggregate的关键在于理解SQL中的聚合函数：以下摘自百度百科：SQL基本函数，聚合函数对一组值执行计算，并返回单个值。除了COUNT以外，聚合函数都会忽略空值。常见的聚合函数有AVG/COUNT/MAX/MIN/SUM等
+>>> from django.db.models import Count
+>>> pubs = Publisher.objects.aggregate(num_books=Count('book'))
+>>> pubs
+{'num_books': 27}
+aggregate的逻辑比较简单，应用场景比较窄，如果你想要对数据进行分组（GROUP BY）后再聚合的操作，则需要使用annotate来实现，annotate()的每个参数代表一个统计.
+根据车辆运行状态字段(choices)统计各个choice的数量:
+In [30]: models.Truck.objects.values('vehicle_running_status').annotate(count=Count('vehicle_running_status'))
+Out[30]: [{'count': 974, 'vehicle_running_status': u'offline'}, {'count': 2128, 'vehicle_running_status': u'alerting'}, {'count': 37, 'vehicle_running_status': u'charging'}, {'count': 39, 'vehicle_running_status': u'driving'}, {'count': 63, 'vehicle_running_status': u'stopped'}]
+
+In [17]: truck_model.truck_set.values_list('vin')
+Out[17]: [(u'LGHB2V190FC200001',), (u'HBLDZO973WO781300',)]
+
+In [18]: truck_model.truck_set.values_list('vin', flat=True)
+Out[18]: [u'LGHB2V190FC200001', u'HBLDZO973WO781300']
+
+filter不等于筛选
+from django.db.models import Q  
+myapps = App.objects.filter(~Q(name=''))
+
+django-rest-swagger
+You can prevent django-rest-swagger from using any serializer:
+    omit_serializer: true
+
+models.CASCADE: 默认为models.CASCADE, 级联删除. 当删除'一'时, '多'会被删除.
+
+执行collectstatic命令会把静态文件拷贝到你设置的static_root目录下.
+利用前缀STATIC_URL的具体内容,来映射STATIC_ROOT
+
+values, values_list remove duplicate:
+    Entity.objects.order_by('foreign_key').values('foreign_key').distinct()
+
+change DateField to DateTimeField可以直接改
+
+----------
+django: How to get objects from a ContentType instance:
+
+    As ContentType model has three fields app_label, model and name. So you can easily filter through these fields.
+
+    notifications = Notification.objects.filter(content_type__model='Comment', object_id=1)
+
+    Example model:
+
+    class Notification(models.Model):
+        content_type = models.ForeignKey(ContentType, related_name='notifications', on_delete=models.CASCADE)
+        object_id = models.PositiveIntegerField(_('Object id'))
+        content_object = GenericForeignKey('content_type', 'object_id')
+----------
+如果启用了SessionAuthenticationMiddleware, 修改密码将会使该用户的所有会话失效
+
+在DEBUG设置为False时，也就是线上环境时，Django项目里的静态文件（js\css\plugins）会无法使用。这是，需要运行python manage.py collectstatic，将静态文件统一收集到一个目录下。STATIC_ROOT配置的就是该目录的绝对路径
+STATICFILES_DIRS: 定义额外的静态文件搜索地址
+STATIC_URL 和 MEDIA_URL 必须以斜杠“/”结束。
+python manage.py dbshell: 指定打开某个数据库的shell, 默认为default。
+python manage.py flush: 从数据库中删除所有数据。已应用的迁移不会被清除。只删除具体数据，不删除数据表！
+
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
+FileSystemFinder：在文件系统里搜索STATICFILES_DIRS指定目录，默认不包含任何目录。
+AppDirectoriesFinder：搜索INSTALLED_APPS注册过的应用目录。
+----------
+django BinaryField 返回:
+    "TextField": "232304014c47484232563139304643323030303031010006120a1e093a3559",
+    "BinaryField": "MjMyMzA0MDE0YzQ3NDg0MjMyNTYzMTM5MzA0NjQzMzIzMDMwMzAzMDMxMDEwMDA2MTIwYTFlMDkzYTM1NTk="
+
+response会返回经b64encode编码过的值；后台admin看不到模型的BinaryField字段；
+----------
+django_filters:
+    MultipleChoiceFilter
+        The same as ChoiceFilter except the user can select multiple choices and the filter will form the OR of these choices by default to match items. The filter will form the AND of the selected choices when the conjoined=True argument is passed to this class.
+        Multiple choices are represented in the query string by reusing the same key with different values (e.g. ‘’?status=Regular&status=Admin’‘).
+----------
+django-simple-history:
+save_without_historical_record:
+    class Poll(models.Model):
+    question = models.CharField(max_length=200)
+    history = HistoricalRecords()
+
+    def save_without_historical_record(self, *args, **kwargs):
+        self.skip_history_when_saving = True
+        try:
+            ret = self.save(*args, **kwargs)
+        finally:
+            del self.skip_history_when_saving
+        return ret
+
+
+    poll = Poll(question='something')
+    poll.save_without_historical_record()
+----------
+Change Reason:
+    poll = Poll(question='Question 1')
+    poll.changeReason = 'Add a question'
+    poll.save()
+----------
+To alter the default permissions given to model (i.e. add, change and delete), you can use a model's meta class default_permissions field. In addition, you can add custom permissions to a model permissions through a model's meta class permissions field.
+class Store(models.Model):
+    name = models.CharField(max_length=30)
+    address = models.CharField(max_length=30,unique=True)
+    city = models.CharField(max_length=30)
+    state = models.CharField(max_length=2)
+    class Meta:
+        default_permissions = ('add',)
+        permissions = (('give_refund','Can refund customers'),('can_hire','Can hire employees'))
+----------
+django reuse app: python setup.py bdist_wheel后，新项目设置app，url之后makemigrations, migrate，不需要考虑reuse app的迁移文件，新项目迁移独立而不是复用:
+新项目 ➜  migrations ls
+0001_initial.py             0002_auto_20181128_0912.py  0003_r1_sex.py              __init__.py
+reuse app ➜  migrations ls
+0001_initial.py             0002_r1_age.py              0003_r1_sex.py              __init__.py

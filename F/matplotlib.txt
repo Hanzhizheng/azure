@@ -1,0 +1,11 @@
+histogram: 柱状图; plt.hist()
+bar chart: 条形图; plt.bar()
+scatter plot: 散点图; plt.scatter()
+stack plot: 累积柱状图; plt.stackplot()
+pie chart: plt.pie()
+----------
+import matplotlib.pyplot as plt: **RuntimeError**: Python is not installed as a framework.
+
+I assume you have installed the pip matplotlib, there is a directory in you root called ~/.matplotlib.
+Create a file ~/.matplotlib/matplotlibrc there and add the following code: backend: TkAgg
+----------

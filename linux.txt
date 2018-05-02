@@ -1,0 +1,4 @@
+lsof -i:port
+    查看端口号和进程号
+chsh -s /bin/zsh
+    使用zsh作为默认终端

@@ -1,0 +1,371 @@
+l=[1,2,3]
+ll=reversed(l)
+print type(ll)  # <type 'listreverseiterator'>
+----------
+>>> x = 1234.56789
+>>> # Two decimal places of accuracy
+>>> format(x, '0.2f')
+'1234.57'
+>>> # Right justified in 10 chars, one-digit accuracy
+>>> format(x, '>10.1f')
+'    1234.6'
+>>> # Left justified
+>>> format(x, '<10.1f')
+'1234.6    '
+>>> # Centered
+>>> format(x, '^10.1f')
+'  1234.6  '
+>>> # Inclusion of thousands separator
+>>> format(x, ',')
+'1,234.56789'
+>>> format(x, ',.1f')
+'1,234.6'
+format优点:
+    1.format方式比％操作符更为灵活，使用format方式时，参数的顺序与格式化的顺序不必完全相同
+        weather= [('Monday', 'rain'), ('Tuesday', 'sunny'), ('Wednesday', 'sunny'), ('Thursday', 'rain'), ('Friday', 'cloudy')]
+        formatter = "Weather of {0[0]} is {0[1]}".format
+        for item in map(formatter, weather):
+            print item
+    2.format可以方便地作为参数传递
+----------
+>>> x = 1234
+>>> bin(x)
+'0b10011010010'
+>>> oct(x)
+'0o2322'
+>>> hex(x)
+'0x4d2'
+>>> # 如果你不想输出 0b , 0o 或者 0x 的前缀的话，可以使用 format() 函数
+>>> format(x, 'b')
+'10011010010'
+>>> format(x, 'o')
+'2322'
+>>> format(x, 'x')
+'4d2'
+----------
+如果你想要漂亮的将文件中的json文档打印出来，你可以用以下这种方式：
+    cat file.json | python -m json.tools
+----------
+>>> 1/2
+0
+>>> 1.0/2
+0.5
+>>> from __future__ import division
+>>> 1/2
+0.5
+----------
+In [5]: [1,2]==[2,1]
+Out[5]: False
+----------
+Python File flush() 方法: fileObject.flush()
+flush() 方法是用来刷新缓冲区的，即将缓冲区中的数据立刻写入文件，同时清空缓冲区，一般情况下，文件关闭后会自动刷新缓冲区，但有时你需要在关闭前刷新它，这时就可以使用 flush() 方法。
+----------
+traceback知道在哪个文件哪个函数哪一行报的错:
+
+import traceback
+try:
+    1/0
+except Exception, e:
+    traceback.print_exc()
+输出结果
+Traceback (most recent call last):
+    File "test_traceback.py", line 3, in <module>
+        1/0
+ZeroDivisionError: integer division or modulo by zero
+这样非常直观有利于调试。
+----------
+rsa load_pkcs1_openssl_pem: BEGIN PUBLIC KEY
+rsa load_pkcs1: BEGIN RSA PUBLIC KEY
+----------
+def hex_to_char(one):
+    # '0x61' -> 'a'
+    # '0x1' -> '\x01'
+    # '0x01' -> '\x01'
+    return chr(int(one, 16))
+
+def char_to_hex(one):
+    # 'a' -> '0x61'
+    # '\x01' -> '0x1'
+    return hex(ord(one))
+
+hexlify = binascii.hexlify  # '\x61' -> '61', '\x01' -> '01'
+
+chr() 用一个范围在 range（256）内的（就是0～255）整数作参数，返回一个对应的字符。
+语法:
+    chr(i)
+        参数 i 可以是10进制也可以是16进制的形式的数字。
+>>>In [19]: chr(0xA0)
+>>>Out[19]: '\xa0'
+
+0x is used for literal numbers. "\x" is used inside strings to represent a character
+>>> 0x41
+65
+>>> "\x41"
+'A'
+>>> "\x01"  # a non printable character
+'\x01'
+----------
+python --help
+-m mod(不带.py后缀): 将库中的python模块用作脚本去运行。
+----------
+print list(set(a).intersection(set(b)))  # 两列表交集
+print list(set(a).union(set(b)))  # 两列表并集
+print list(set(b).difference(set(a)))  # 两列表差集, b中有而a中没有的, 非常高效！
+----------
+**kwargs.pop('x', None)
+>>> d={}
+>>> d.setdefault('a','a')
+'a'
+>>> d
+{'a': 'a'}
+>>> d.setdefault('a','b')
+'a'
+>>> d
+{'a': 'a'}
+
+dict.setdefault(key, default=None)
+如果key在字典中，返回对应的值。如果不在字典中，则插入key及设置的默认值default，并返回default，default默认值为None。
+----------
+sorted()不会改变原来的list，而是会返回一个新的已经排序好的list。
+list.sort()方法仅仅被list所定义，sorted()可用于任何一个可迭代对象。
+----------
+Ignore some testcases:
+    @unittest.skip('skip is upper.')
+----------
+无限小: float('-Inf')
+----------
+和index()不同的是find()在找不到substring时不会抛出异常，而是会返回-1，因此不会影响程序的执行
+----------
+装饰器其实就是一个闭包，把一个函数当做参数然后返回一个替代版函数。
+----------
+静态字段只在内存中保存一份，普通字段在每个对象中都要保存一份。方法方法包括：普通方法、静态方法和类方法，三种方法在内存中都归属于类，区别在于调用方式不同。
+----------
+think of the Logger logging level as a global restriction on which messages are "interesting" for a given logger and its handlers. The messages that are considered by the logger afterwards get sent to the handlers, which perform their own filtering and logging process.
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+fromatter = logging.Formatter('%(asctime)s-%(message)s')
+handler = logging.StreamHandler()
+handler.setLevel(logging.ERROR)
+handler.setFormatter(fromatter)
+logger.addHandler(handler)
+try:
+    open('/path/to/does/not/exist', 'rb')
+except (SystemExit, KeyboardInterrupt):
+    raise
+except Exception, e:
+    logger.error('Failed to open file', exc_info=True)
+logger按info过滤，之后传给它的handlers，handler有自己的level规则，按error再过滤传来的log。
+----------
+ord('E')以一个字符（长度为1的字符串）作为参数，返回对应的 ASCII 数值，或者 Unicode 数值。
+
+转16进制:
+In [38]: ord('E')
+Out[38]: 69
+In [41]: hex(69)
+Out[41]: '0x45'
+
+\x45 vs 0x45:
+In [48]: 0x45
+Out[48]: 69
+In [49]: '\x45'
+Out[49]: 'E'
+In [60]: ord('\x45')
+Out[60]: 69
+
+chr(69)用一个范围在 range（256）内的（就是0～255）整数作参数，返回一个对应的字符。
+
+In [58]: int('0x45',16)
+Out[58]: 69
+
+In [59]: int('45',16)
+Out[59]: 69
+
+In [60]: int('\x45',16)
+Out[60]: 14
+
+In [57]: chr(69)
+Out[57]: 'E'
+
+ 1 def str_to_hex(s):
+ 2     return ' '.join([hex(ord(c)).replace('0x', '') for c in s])
+ 3 
+ 4 def hex_to_str(s):
+ 5     return ''.join([chr(i) for i in [int(b, 16) for b in s.split(' ')]])
+ 6     
+ 7 def str_to_bin(s):
+ 8     return ' '.join([bin(ord(c)).replace('0b', '') for c in s])
+ 9     
+10 def bin_to_str(s):
+11     return ''.join([chr(i) for i in [int(b, 2) for b in s.split(' ')]])
+----------
+python进程池apply与apply_async的区别:
+apply方法是阻塞的。
+意思就是等待当前子进程执行完毕后，在执行下一个进程。
+apply_async 是异步非阻塞的。
+意思就是：不用等待当前进程执行完毕，随时根据系统调度来进行进程切换。
+----------
+进程虽然不像线程那样共享内存的数据，而是每个进程有单独的内存，但多进程也是共享文件系统的，即硬盘系统；当多进程同时写入文件操作时，可能造成数据的破坏，因此进程也存在同步锁。
+进程锁可以保证文件系统的安全，但是它使得并行变成了串行，效率下降了，也可能造成死锁问题，一般避免用锁机制。
+----------
+python的stdout是有缓冲区的，给你个例子你就知道了
+
+import time
+import sys
+ 
+for i in range(5):
+    print i,
+    #sys.stdout.flush()
+    time.sleep(1)
+    
+这个程序本意是每隔一秒输出一个数字，但是如果把这句话sys.stdout.flush()注释的话，你就只能等到程序执行完毕，屏幕上会一次性输出0，1，2，3，4。
+如果你加上sys.stdout.flush()，刷新stdout，这样就能每隔一秒输出一个数字了。
+----------
+python两个有趣属性
+__all__可用于模块导入时限制，如：
+    from module import *
+    此时被导入模块若定义了__all__属性，则只有all内指定的属性、方法、类可被导入~
+    若没定义，则模块内的所有将被导入。
+
+__slots__用于限定类属性，如：
+    class A(object):
+        __slots__ = ['var']
+
+    此时外部调用时，如：
+    a = A()
+    a.var = 4    #不会报错
+    a.other = 4  #此时则会抛出异常AttributeError
+----------
+一个ascii码就是一个字节， 因为ascll码的二进制范围是00000000到11111111， 十进制范围是0到255。
+
+1字节=8位
+一个16进制为0xf，一个16进制数为四个二进制数,0x0为0000,0xf为1111，即1个16进制数为4位; 1个8进制数为3位。
+
+UE软件打开bmp图像，如42 4D 38 04 04 00 00 00 00 00 36 04 00 00，每两个16进制数隔开，用意是：因为1个16进制数为4位，两个就是8位，即1个字节，所以这里是14字节，是位图文件头，以字节为单位，容易计数。
+
+内存的储存单元是字节。
+----------
+我们将服务端程序分为了web服务器和应用程序服务器。
+
+web服务器是用于处理HTML文件，让客户可以通过浏览器进行访问。主流的有apache,IIS,nginx,lghttpd等。
+应用服务器处理业务逻辑，比如使用python的django,flask写成的程序
+
+通常来自客户端浏览器的请求被web服务器截获，如果是静态请求，则nginx会自己做处理，如果是动态请求，则会抛给后端应用服务器来处理。于是如何在web服务器与应用服务器之间进行通信成了主要问题，这就引出了三种处理的接口：CGI，FastCGI，WSGI。
+----------
+要理解select.select模块其实主要就是要理解它的参数，以及其三个返回值。
+select()方法接收并监控3个通信列表，第一个是所有的输入的data，就是指外部发过来的数据，第2个是监控和接收所有要发出去的data(outgoing data)，第3个监控错误信息。
+select() returns three new lists, containing subsets of the contents of the lists passed in. All of the sockets in the readable list have incoming data buffered and available to be read. All of the sockets in the writable list have free space in their buffer and can be written to. The sockets returned in exceptional have had an error (the actual definition of “exceptional condition” depends on the platform).
+----------
+In [10]: '\xe6\x97\xb6\xe9\x97\xb4'.decode('utf-8')
+Out[10]: u'\u65f6\u95f4'
+----------
+python中字符串自带的split方法一次只能使用一个字符对字符串进行分割，但是python的正则模块则可以实现多个字符分割
+import re
+re.split('[_#|]','this_is#a|test')
+返回的是一个列表（list），输出结果如下：
+['this', 'is', 'a', 'test']
+----------
+显示分数
+from fractions import Fraction
+
+In [25]: print Fraction(11, 35)
+11/35
+
+In [27]: print Fraction(1.5)
+3/2
+----------
+静态方法主要是用来存放逻辑性的代码，逻辑上属于类，但是和类本身没有关系，也就是说在静态方法中，不会涉及到类中的属性和方法的操作。静态方法是个独立的、单纯的函数，它仅仅托管于某个类的名称空间中，便于使用和维护。
+----------
+The threading library defines the following objects for synchronizing threads. synchronize threads so that only one thread can make modifications to shared data at any given time.
+• Lock
+    Always try to follow this prototype
+    # Example critical section
+    x = 0
+    x_lock = threading.Lock()
+    x_lock.acquire()
+    try:
+        statements using x
+    finally:
+        x_lock.release()
+
+    # Python 2.6/3.0 has an improved mechanism for dealing with locks and critical sections.
+    with x_lock:
+        statements using x
+• RLock
+• Semaphore
+    • Resource control.   You can limit the number of threads performing certain operations.  For example, performing database queries, making network connections, etc.
+        m = threading.Semaphore(n)  # only n threads can be executing the function at once (if there are more, they will have to wait)
+    • Signaling. Semaphores can be used to send "signals" between threads.  For example, having one thread wake up another thread.
+        Using a semaphore to signal
+        done = threading.Semaphore(0)
+        thread1: done.release()
+        thread1: done.acquire()
+        Here, acquire() and release() occur in different threads and in a different order
+        Often used with producer-consumer problems
+    Unlike locks, acquire()/release() can be called in any order and by any thread.
+    Semaphore 在内部管理着一个计数器。调用 acquire() 会使这个计数器 -1，release() 则是+1.
+    计数器的值永远不会小于 0，当计数器到 0 时，再调用 acquire() 就会阻塞，直到其他线程来调用release()
+    Semaphore 支持上下文管理协议
+• BoundedSemaphore
+    BoundedSemaphore正好和Semaphore相反：一个工厂函数，返回一个新的有界信号量对象。有界信号量会确保他的值不会超过初始值；
+    如果超出则会抛出ValueError异常。初始值默认为1。
+• Event
+    事件处理的机制：全局定义了一个“Flag”，线程通过wait()方法进入等待状态，直到另一个线程调用该Event的set()方法将Flag设置为True时，
+    该Event会通知所有wait的线程恢复运行。
+    This can be used to have one or more  threads wait for something to occur.
+    Setting an event will unblock all waiting threads simultaneously (if any)
+• Condition
+    A combination of locking/signaling.
+----------
+There are three major setup.py commands we will use:
+
+    bdist_egg: This creates an egg file. This is what is necessary so someone can use easy_install your_project.
+    bdist_wininst: This will create an .exe that will install your project on a windows machine.
+    sdist: This create a raw source distribution which someone can download and run python setup.py directly.
+----------
+traceback.print_exc()跟traceback.format_exc()有什么区别呢？
+    format_exc()返回字符串，print_exc()则直接给打印出来。
+        即traceback.print_exc()与print traceback.format_exc()效果是一样的。
+    print_exc()还可以接受file参数直接写入到一个文件。比如
+        traceback.print_exc(file=open('tb.txt','w+'))
+----------
+import sys
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
+def hook(exc_type, exc_value, exc_traceback):
+    logger.debug('%s-%s-%s' % (exc_type, exc_value, exc_traceback.tb_lineno))
+
+
+sys.excepthook = hook
+
+
+def test():
+    raise Exception('test')
+
+
+if __name__ == '__main__':
+    test()
+
+>>>DEBUG:__main__:<type 'exceptions.Exception'>-test-19
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------

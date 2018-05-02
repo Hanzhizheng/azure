@@ -1,0 +1,30 @@
+label for属性:
+1.  显式的联系：为<label>标签下的for属性命名一个目标表单id，这样就是显式形式
+    <label for="SSN">Social Security Number:</label>
+    <input type="text" name="SocSecNum" id="SSN" />
+2.  隐式的联系：将表单控件作为标记标签的内容
+    <label>Date of Birth: <input type="text" name="DofB" /></label>
+----------
+HTML <a> 标签的 target 属性规定在何处打开链接文档。
+_blank
+浏览器总在一个新打开、未命名的窗口中载入目标文档。http://www.w3school.com.cn/tags/att_a_target.asp
+_blank	在新窗口中打开被链接文档。
+_self	默认。在相同的框架中打开被链接文档。
+_parent	在父框架集中打开被链接文档。
+_top	在整个窗口中打开被链接文档。
+framename	在指定的框架中打开被链接文档。
+<h3>Table of Contents</h3>
+<ul>
+  <li><a href="pref.html" target="view_window">Preface</a></li>
+  <li><a href="chap1.html" target="view_window">Chapter 1</a></li>
+  <li><a href="chap2.html" target="view_window">Chapter 2</a></li>
+  <li><a href="chap3.html" target="view_window">Chapter 3</a></li>
+</ul>
+当用户第一次选择内容列表中的某个链接时，浏览器将打开一个新的窗口，将它标记为 "view_window"，然后在其中显示希望显示的文档内容。如果用户从这个内容列表中选择另一个链接，且这个 "view_window" 仍处于打开状态，浏览器就会再次将选定的文档载入那个窗口，取代刚才的那些文档。
+
+在整个过程中，这个包含了内容列表的窗口是用户可以访问的。通过单击窗口中的一个连接，可使另一个窗口的内容发生变化。
+----------
+每个载入浏览器的 HTML 文档都会成为 Document 对象。
+Document 对象使我们可以从脚本中对 HTML 页面中的所有元素进行访问。
+提示：Document 对象是 Window 对象的一部分，可通过 window.document 属性对其进行访问。
+----------

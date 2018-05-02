@@ -1,0 +1,20 @@
+A C program consists of various tokens and a token is either a keyword, an identifier, a constant, a string literal, or a symbol.
+
+For Example:
+
+1) Keywords: 
+Examples- for, while, if etc.
+
+2) Identifier
+Examples- Variable name, function name etc.
+
+3) Operators:
+Examples- '+', '++', '-' etc.
+
+4) Separators:
+Examples- ', ' ';' etc
+----------
+Syntax Analysis or Parsing is the second phase, i.e. after lexical analysis, It checks the syntactical structure of the given input, i.e. whether the given input is in the correct syntax or not. It does so by building a data structure, called a Parse tree or Syntax tree.
+----------
+非终结符可理解为一个可拆分元素，而终结符是不可拆分的最小元素。
+Є is an empty string。

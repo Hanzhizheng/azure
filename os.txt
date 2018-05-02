@@ -1,0 +1,17 @@
+Memories are made up of registers. Each register in the memory is one storage location. Storage location is also called as memory location. Memory locations are identified using Address. The total number of bit a memory can store is its capacity.
+----------
+临界资源: 多道程序系统中存在许多进程，它们共享各种资源，然而有很多资源一次只能供一个进程使用，一次仅允许一个进程使用的资源称为临界资源。属于临界资源的硬件有打印机、磁带机等，软件有消息缓冲队列、变量、数组、缓冲区等。诸进程间应采取互斥方式，实现对这种资源的共享。
+临界区(Critical Section): 每个进程中访问临界资源的那段代码称为临界区。显然，若能保证诸进程互斥地进入自己的临界区，便可实现诸进程对临界资源的互斥访问。
+Critical section is a code segment that can be accessed by only one process at a time.
+
+Mutex(互斥锁)是厕所钥匙，一次只能一人拿着这把钥匙去厕所，结束了，这个人把钥匙给队列中的下一个人。
+Semaphore(信号量)是一个自由的官方厕所钥匙，我们有四个厕所，他们的锁和钥匙是一样的。信号量开始设置为4，表示4个厕所是自由滴，如果一个人进去了，数量就-1，
+如果厕所满了，钥匙数目就为0，信号量数目这时也是0.如果一个人离开厕所，信号量+1，队列中的下一个人可以用啦！
+----------
+Each thread has
+    A program counter
+    A register set
+    A stack space
+----------
+多道程序设计: 内存容量越来越大，把多个程序放在内存里并发的执行，不用再从外面一个一个取，减少io消耗，提高了cpu效率。
+----------

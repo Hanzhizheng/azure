@@ -1,0 +1,41 @@
+stringObject.split(separator, howmany): 如果把空字符串 ("") 用作 separator，那么 stringObject 中的每个字符之间都会被分割。
+
+<script type="text/javascript">
+// slice()方法可提取字符串的某个部分，并以新的字符串返回被提取的部分, 
+// stringObject.slice(start,end)
+// 在本例中，我们将提取从位置 6 开始的所有字符
+var str="Hello happy world!"
+document.write(str.slice(6))
+</script>
+
+Event.target
+    在HTML文档中，我们为<p>元素绑定点击事件("click")，由于DOM元素的事件冒泡机制，我们点击<p>元素内的一个<span>元素就可以触发<p>元素上绑定的click事件。target属性就用于返回最初触发事件的DOM元素，也就是本例中的<span>元素。(currentTarget属性始终返回的都是该<p>元素)。
+
+----------
+元素上监听事件被触发时: 
+    函数不传参数时，默认第一个参数时event
+    如果传入参数时，函数中有一个对象叫arguments，用于保存参数列表，传入一个参数时，该参数就保存在arguments[0]处，当函数被触发时，arguments[0]就被替换成了事件对象event了。
+    document.onClick，是一种内部api，既然是api，就得按照api规范来用它，如：规范里面就是，在element被click的时候，这个api的所定义的回调函数会被调用，并且传入第一个参数是event对象。
+<div id="app">
+  <p v-on:click="greet"><button>Greet</button></p>
+</div>
+
+<script>
+var app = new Vue({
+  el: '#app',
+  data: {
+    name: 'Vue.js'
+  },
+  methods: {
+    // greet: function (event, a=1) {
+    greet: function (a=1) {  // event作为默认参数传入
+      alert('Hello ' + this.name + '!')
+	  if (event) {
+		  alert(event.target.tagName)
+	  }
+    }
+  }
+})
+</script>
+----------
+大部份企业用户最佳方案是公众号+小程序，同时运营。这样就可以把二者的长处充份发挥了。公众号进行信息传达和粉丝沉淀，小程序提供必要的功能服务支持，这样即可达到最佳的用户体验。
