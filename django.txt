@@ -13,7 +13,8 @@ workbook = xlrd.open_workbook(filename=None, file_contents=ifile.read())
 >>> pubs = Publisher.objects.aggregate(num_books=Count('book'))
 >>> pubs
 {'num_books': 27}
-aggregate的逻辑比较简单，应用场景比较窄，如果你想要对数据进行分组（GROUP BY）后再聚合的操作，则需要使用annotate来实现，annotate()的每个参数代表一个统计.
+aggregate的逻辑比较简单，应用场景比较窄，如果你想要对数据进行分组（GROUP BY）后再聚合的操作，则需要使用annotate来实现，Annotate 对于 queryset 中的每个值在指定的属性上进行汇总, 相当于group_by. mysql 分组之后如何统计记录条数? gourp by 之后的 count 把group by查询结果当成一个表再count一次
+
 根据车辆运行状态字段(choices)统计各个choice的数量:
 In [30]: models.Truck.objects.values('vehicle_running_status').annotate(count=Count('vehicle_running_status'))
 Out[30]: [{'count': 974, 'vehicle_running_status': u'offline'}, {'count': 2128, 'vehicle_running_status': u'alerting'}, {'count': 37, 'vehicle_running_status': u'charging'}, {'count': 39, 'vehicle_running_status': u'driving'}, {'count': 63, 'vehicle_running_status': u'stopped'}]
@@ -120,3 +121,73 @@ django reuse app: python setup.py bdist_wheel后，新项目设置app，url之�
 0001_initial.py             0002_auto_20181128_0912.py  0003_r1_sex.py              __init__.py
 reuse app ➜  migrations ls
 0001_initial.py             0002_r1_age.py              0003_r1_sex.py              __init__.py
+----------
+查看 Django queryset 执行的 SQL: print str(Author.objects.all().query)
+----------
+restframework自定义字段:
+class CustomField(serializers.Field):
+    def get_attribute(self, instance):
+        # （序列化时）从模型实例中取一个值给这个字段处理,也可以使用`source`参数指定
+        return instance.key
+
+    def get_value(self, dictionary):
+        # （反序列化时）从传入数据中提取一个值给这个字段处理
+        return super(CustomField, self).get_value(dictionary)
+
+    def to_representation(self, value):
+        # （序列化时）处理出来的数据用来序列化显示
+        return value.url
+
+    def to_internal_value(self, data):
+        # （反序列化时）处理接收到的数据
+        return data['key']
+----------
+from django.db import models
+
+class Users(models.Model):
+    pass
+
+class Sample(models.Model):
+    users = models.ManyToManyField(Users)
+
+Users().save()
+Users().save()
+
+# Access the through model directly
+ThroughModel = Sample.users.through
+
+users = Users.objects.filter(pk__in=[1,2])
+
+sample_object = Sample()
+sample_object.save()
+
+ThroughModel.objects.bulk_create([
+    ThroughModel(users_id=users[0].pk, sample_id=sample_object.pk),
+    ThroughModel(users_id=users[1].pk, sample_id=sample_object.pk)
+])
+传统能源例子:
+    class TruckSerie(DeletedMixin, BaseModel):
+        truck_classes = models.ManyToManyField(
+            'owl.TruckClass',
+            verbose_name=u'品系',
+            blank=True,
+            help_text=u'品系',
+        )
+
+    tm = models.TruckSerie.truck_classes.through
+    In [61]: print tm.objects.bulk_create([tm(truckclass_id=1,truckserie_id=1),tm(truckclass_id=2,truckserie_id=1)])
+    [<TruckSerie_truck_classes: TruckSerie_truck_classes object>, <TruckSerie_truck_classes: TruckSerie_truck_classes object>]
+
+    In [62]: models.TruckSerie.objects.first().truck_classes.all()
+    Out[62]: [<TruckClass: test>, <TruckClass: test1>]
+----------
+django unittest 传参数:
+
+    post(path, data=None, content_type=MULTIPART_CONTENT, follow=False, secure=False, **extra)
+    >>> c = Client()
+    >>> c.post('/login/', {'name': 'fred', 'passwd': 'secret'})
+
+    get(path, data=None, follow=False, secure=False, **extra)
+    >>> c = Client()
+    >>> c.get('/customers/details/', {'name': 'fred', 'age': 7})
+----------

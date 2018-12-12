@@ -351,8 +351,32 @@ if __name__ == '__main__':
 
 >>>DEBUG:__main__:<type 'exceptions.Exception'>-test-19
 ----------
+Use isort to automate import sorting using the guidelines below.
+
+Quick start:
+
+$ pip install isort
+$ isort -rc .
 ----------
+注释代码:
+    NOTE: Description of how the code works (when it isn't self evident).
+    XXX: Warning about possible pitfalls, can be used as NOTE:XXX:.
+    HACK: Not very well written or malformed code to circumvent a problem/bug. Should be used as HACK:FIXME:.
+    FIXME: This works, sort of, but it could be done better. (usually code written in a hurry that needs rewriting).
+    BUG: There is a problem here.
+    TODO: No problem, but addtional code needs to be written, usually when you are skipping something.
 ----------
+mock.patch('xxx') error: TypeError: Need a valid target to patch. You supplied: 'xxx'
+    The patch decorator requires the target to be a full dotted path: mock.patch('x.xx.xxx')
+mock 抛出一个异常:
+    @patch("aa.classA.getnum")
+    def test_self_function(self, mock_getnum):
+        mock_getnum.side_effect = IOError()
+
+@mock.patch('my_module.os.path')
+@mock.patch('my_module.os')
+def test(self, mock_os, mock_path):
+    pass
 ----------
 ----------
 ----------
