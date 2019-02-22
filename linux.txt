@@ -2,3 +2,5 @@ lsof -i:port
     查看端口号和进程号
 chsh -s /bin/zsh
     使用zsh作为默认终端
+find . -name '*.py' |xargs grep test
+    在当前目录中找到所有.py文件，通过xargs将标准输入转成参数，传递给grep搜索含有固定字符串'test'的文件。

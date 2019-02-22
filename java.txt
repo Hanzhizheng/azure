@@ -39,3 +39,13 @@ public class TestDog{
    }
 }
 ----------
+java中什么时候该用static修饰方法？有什么好处或者坏处？
+当一个方法或者变量需要初始化加载，或者是经常被调用的时候可以加上static。
+用static修饰的方法可以用类名直接调用，不用的一定要先实例化一个对象然后才可以调用
+比如 person这个类里面有一个方法public static add(){}
+那么可以直接用person类调用 person.add();
+比如 public add(){}
+那么先要person p=new person();
+然后用p.add();
+坏处：初始化加载，比较占内存，所以不经常用的方法，不建议加此关键字。
+注意：在一个static 方法中引用任何实例变量都是非法的。

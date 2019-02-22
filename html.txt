@@ -28,3 +28,68 @@ framename	在指定的框架中打开被链接文档。
 Document 对象使我们可以从脚本中对 HTML 页面中的所有元素进行访问。
 提示：Document 对象是 Window 对象的一部分，可通过 window.document 属性对其进行访问。
 ----------
+Many <meta> elements include name and content attributes:
+
+name specifies the type of meta element it is; what type of information it contains.
+content specifies the actual meta content.
+
+Two such meta elements that are useful to include on your page define the author of the page, and provide a concise description of the page. Let's look at an example:
+    <meta name="author" content="Chris Mills">
+    <meta name="description" content="The MDN Web Docs Learning Area aims to provide
+        complete beginners to the Web with all they need to know to get
+        started with developing web sites and applications.">
+Specifying an author is useful in a few ways: it is useful to be able to work out who wrote the page, if you want to contact them with questions about the content. Some content management systems have facilities to automatically extract page author information and make it available for such purposes.
+
+Specifying a description that includes keywords relating to the content of your page is useful as it has the potential to make your page appear higher in relevant searches performed in search engines (such activities are termed Search Engine Optimization, or SEO.)
+
+Many <meta> features just aren't used any more. For example, the keyword <meta> element (<meta name="keywords" content="fill, in, your, keywords, here">) — which is supposed to provide keywords for search engines to determine relevance of that page for different search terms — is ignored by search engines, because spammers were just filling the keyword list with hundreds of keywords, biasing results.
+----------
+Adding custom icons to your site
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+----------
+The <video> elementSection
+<video src="rabbit320.webm" controls>
+  <p>Your browser doesn't support HTML5 video. Here is a <a href="rabbit320.webm">link to the video</a> instead.</p> 
+</video>
+
+Supporting multiple video formats
+<video controls>
+  <source src="rabbit320.mp4" type="video/mp4">
+  <source src="rabbit320.webm" type="video/webm">
+  <p>Your browser doesn't support HTML5 video. Here is a <a href="rabbit320.mp4">link to the video</a> instead.</p>
+</video>
+the browser will go through the <source> elements and play the first one that it has the codec to support.
+----------
+WebVTT is a format for writing text files containing multiple strings of text along with metadata such as what time in the video you want each text string to be displayed, and even limited styling/positioning information. These text strings are called cues, and you can display different types for different purposes, the most common being:
+
+subtitles
+Translations of foreign material, for people who don't understand the words spoken in the audio.
+captions
+Synchronized transcriptions of dialog or descriptions of significant sounds, to let people who can't hear the audio understand what is going on.
+timed descriptions
+Text for conversion into audio, to serve people with visual impairments.
+A typical WebVTT file will look something like this:
+
+WEBVTT
+
+1
+00:00:22.230 --> 00:00:24.606
+This is the first subtitle.
+
+2
+00:00:30.739 --> 00:00:34.074
+This is the second.
+
+  ...
+To get this displayed along with the HTML media playback, you need to:
+
+Save it as a .vtt file in a sensible place.
+Link to the .vtt file with the <track> element. <track> should be placed within <audio> or <video>, but after all <source> elements. Use the kind attribute to specify whether the cues are subtitles, captions, or descriptions. Further, use srclang to tell the browser what language you have written the subtitles in.
+Here's an example:
+
+<video controls>
+    <source src="example.mp4" type="video/mp4">
+    <source src="example.webm" type="video/webm">
+    <track kind="subtitles" src="subtitles_en.vtt" srclang="en">
+</video>
+----------

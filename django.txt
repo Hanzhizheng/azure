@@ -191,3 +191,77 @@ django unittest 传参数:
     >>> c = Client()
     >>> c.get('/customers/details/', {'name': 'fred', 'age': 7})
 ----------
+from django.core import management
+management.call_command('flush')
+----------
+To get the list of likes this Comment received you must use the ContentType class:
+
+from django.contrib.contenttypes.models import ContentType
+
+# Pass the instance we created in the snippet above
+ct = ContentType.objects.get_for_model(comment)
+
+# Get the list of likes
+Activity.objects.filter(content_type=ct, object_id=comment.id, activity_type=Activity.LIKE)
+----------
+restframework custom router:  注意变量routes顺序，否则可能发生404，405；注意url的pattern。
+from rest_framework.routers import (
+    Route,
+    DynamicDetailRoute,
+    SimpleRouter,
+    DefaultRouter,
+    DynamicListRoute,
+)
+
+
+class CustomRouter(DefaultRouter):
+    routes = [
+        Route(
+            url=r'^{prefix}{trailing_slash}$',
+            mapping={'get': 'list'},
+            name='{basename}-list',
+            initkwargs={'suffix': 'List'}
+        ),
+        DynamicListRoute(
+            url=r'^{prefix}/{methodname}{trailing_slash}$',
+            name='{basename}-{methodnamehyphen}',
+            initkwargs={}
+        ),
+        Route(
+            url=r'^{prefix}/{lookup}{trailing_slash}$',
+            mapping={
+                'get': 'retrieve',
+                'patch': 'partial_update',
+                'delete': 'destroy'
+            },
+            name='{basename}-detail',
+            initkwargs={'suffix': 'Instance'}
+        ),
+        DynamicDetailRoute(
+            url=r'^{prefix}/{lookup}/{methodname}{trailing_slash}$',
+            name='{basename}-{methodnamehyphen}',
+            initkwargs={}
+        ),
+    ]
+
+----------
+默认情况下，LOGGING设置与Django的默认logging设置进行合并。
+如果Logging中的disable_existing_loggers键为True(默认值)，那么默认配置中的所有logger都将禁用。Logger的禁用与删除不同；logger仍然存在，但是将默默丢弃任何传递给它的信息，也不会传播给上一级logger。所以，你应该非常小心使用'disable_existing_loggers'：True，它可能不是你想要的。你可以设置disable_existing_loggers为False，并重新定义部分或所有的默认loggers，或者你可以设置LOGGING_CONFIG为None，并自己处理logging配置。
+
+默认情况下，Django的logging配置如下，
+
+当DEBUG为True时，
+    a. 全局logger'django'会向控制台发送级别等于或高于INFO的所有消息。
+当DEBUG为False时，
+    a. 全局logger'django'会向AdminEmailHandler发送ERROR或者CRITICAL级别的消息。
+其它，和DEBUG值无关，
+    a. logger'django.server'会发送所有INFO或者更高级别的消息给控制台。
+----------
+模型非必填，swagger改变必填非必填状态，默认必填required=True，非必填required=False:
+    main_factory = serializers.PrimaryKeyRelatedField(
+        queryset=models.MainFactory.objects.filter(deleted=False),
+        help_text=u'主机厂(int)',
+    )
+    vin = serializers.CharField(
+    )
+----------

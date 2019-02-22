@@ -378,13 +378,86 @@ mock 抛出一个异常:
 def test(self, mock_os, mock_path):
     pass
 ----------
+Request如何传递对象:
+
+data = {
+            'handle_data': [
+                {
+                    'row_key': self.alert_record[0],
+                    'handle_plan_status': 'handled',
+                    'handle_plan_data': {
+                        'remarks': 'remarks',
+                    },
+                    'alert_status': 'alerting',
+                },
+            ]
+}
+response = self.client_patch(
+    self.base_url,
+    data=json.dumps(data),
+    content_type="application/json",
+)
 ----------
+>>> import ast
+>>> ast.literal_eval("545.2222")
+545.2222
+>>> ast.literal_eval("31")
+31
 ----------
+每个logger都有一个日志级别。写入logger的每条消息都是一个日志记录。每个日志记录也具有一个日志级别，它表示对应的消息的严重性。
+当一条消息传递给logger时，消息的日志级别将与logger的日志级别进行比较。如果消息的日志级别大于等于logger的日志级别，该消息将会往下继续处理。如果小于，该消息将被忽略。
+Handler决定如何处理logger中的每条消息。它描述了一个详细的日志行为，例如将消息写到屏幕上、写到文件中或者写到网络socket。如果日志记录的日志级别小于handler的级别，handler将忽略该消息。
+一个filter被用来对从logger传递给handler的日志记录进行额外的控制。默认情况下，任何满足日志级别要求的日志消息都将被处理。然而，通过安装一个filter，你可以对日志处理添加额外的条件。例如，你可以安装一个filter，只允许处理来自特定源的ERROR消息。
+Filters可以被用来修改将要发送的日志记录的优先级。例如，如果日志记录满足特定的条件，你可以编写一个filter将日志记录从ERROR降为WARNING。
+Filters可以安装在logger上或者handler上。多个filter可以串联起来，实现多层filter行为。
+习惯上，logger的名称通常使用__name__，即包含该logger的Python模块的名字。点号分隔的logger名字定义一个层级。a logger被认为是 a.b logger的父级，a.b logger 被认为是 a.b.c logger 的父级。
+层级为何如此重要？因为，loggers可以传播它们的logging调用给它们的父级。通过这种方式，你可以在logger树的顶部定义一系列的handlers，并捕获在logger子树中的所有logging调用。在a命名空间中，定义的handler将捕获 a.b 和 a.b.c logger 上的所有日志消息。
+这种传播行为，可以基于每个logger进行控制。如果，你不想让某个logger传播消息给它的父级，你可以关闭这个行为。
+
+'filters': {
+    'special': {
+        '()': 'project.logging.SpecialFilter',
+        'foo': 'bar',
+    },
+    'require_debug_true': {
+        '()': 'django.utils.log.RequireDebugTrue',
+    },
+},
+如果filter在构造时，要求额外的参数，可以在filter的配置字典中用额外的键提供。在这个例子中，在实例化SpecialFilter时，foo参数被赋予'bar'值。
 ----------
+打开浏览器网页: os.system(u"open /Applications/Google\ Chrome.app http://www.google.com")
 ----------
+def application(environ, start_response):
+    start_response('200 OK', [('Content-Type', 'text/html')])
+    return '<h1>Hello, web!</h1>'
+无论多么复杂的Web应用程序，入口都是一个WSGI处理函数。HTTP请求的所有输入信息都可以通过environ获得，HTTP响应的输出都可以通过start_response()加上函数返回值作为Body。
 ----------
+__new__方法接受的参数虽然也是和__init__一样，但__init__是在类实例创建之后调用，而 __new__方法正是创建这个类实例的方法。
+def __new__(cls, name, age):
+    print '__new__ called.'
+    return super(Person, cls).__new__(cls, name, age)
+def __init__(self, name, age):
+    print '__init__ called.'
+    self.name = name
+    self.age = age
 ----------
+
+class Fib(object):
+    def __init__(self):
+        self.a, self.b = 0, 1 # 初始化两个计数器a，b
+
+    def __iter__(self):
+        return self # 实例本身就是迭代对象，故返回自己
+
+    def next(self):
+        self.a, self.b = self.b, self.a + self.b # 计算下一个值
+        if self.a > 100000: # 退出循环的条件
+            raise StopIteration();
+        return self.a # 返回下一个值
 ----------
+对于container类型（列表是典型的container），可以直接用于for循环进行遍历。而将列表转化成迭代器Iterator进行遍历，效果似乎一样。
+
+为什么两种方法都可以呢？Python到底是怎样遍历一个container的呢？前面提到Python的迭代器iterator实现两种方法分别是__iter__和next，Python正是通过调用这两种方法来实现遍历的。首先，当Python在执行for循环时，会先调用container的__iter__方法来获得container的迭代器iterator，其实就是将container转化成迭代器iterator。然后它会重复调用迭代器iterator的next()方法，直到迭代器iterator抛出StopIteration异常。一旦这个异常抛出，for循环就结束了。
 ----------
 ----------
 ----------
