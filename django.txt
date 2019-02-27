@@ -265,3 +265,22 @@ class CustomRouter(DefaultRouter):
     vin = serializers.CharField(
     )
 ----------
+列举django orm中三种能写sql语句的方法:
+    1. 使用extra：查询人民邮电出版社出版并且价格大于50元的书籍
+        Book.objects.filter(publisher__name='人民邮电出版社').extra(where=['price>50'])
+    2. 使用raw
+        books=Book.objects.raw('select * from hello_book')
+        for book in books:
+           print book
+    3. 自定义sql
+        from django.db import connection
+        cursor = connection.cursor()
+
+        cursor.execute("insert into hello_author(name) VALUES ('郭敬明')")
+        cursor.execute("update hello_author set name='韩寒' WHERE name='郭敬明'")
+        cursor.execute("delete from hello_author where name='韩寒'")
+
+        cursor.execute("select * from hello_author")
+        cursor.fetchone()
+        cursor.fetchall()
+--------

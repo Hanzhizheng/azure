@@ -459,8 +459,28 @@ class Fib(object):
 
 为什么两种方法都可以呢？Python到底是怎样遍历一个container的呢？前面提到Python的迭代器iterator实现两种方法分别是__iter__和next，Python正是通过调用这两种方法来实现遍历的。首先，当Python在执行for循环时，会先调用container的__iter__方法来获得container的迭代器iterator，其实就是将container转化成迭代器iterator。然后它会重复调用迭代器iterator的next()方法，直到迭代器iterator抛出StopIteration异常。一旦这个异常抛出，for循环就结束了。
 ----------
+from argparse import RawTextHelpFormatter
+parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
+parser.add_argument() 在help使用 \n 可以换行
 ----------
+parser.add_argument()
+    python test.py --help
+    -h, --help         show this help message and exit
+    -u URL, --url URL  n: new  f: fin  j: jing5  g: guo6
+parser.add_argument(dest='')
+    python test.py --help
+    -h, --help   show this help message and exit
+    -u , --url   n: new  f: fin  j: jing5  g: guo6
 ----------
+Python跳过第一行读取文件内容
+from itertools import islice
+f = open('test.txt')
+for i in islice(f, 1, None):
+    print i
+islice(iterable, [start,] stop [, step])
+----------
+In [12]: {}.fromkeys(['a', 'b', 'c'], 'xx')
+Out[12]: {'a': 'xx', 'b': 'xx', 'c': 'xx'}
 ----------
 ----------
 ----------

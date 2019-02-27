@@ -59,3 +59,8 @@ URI： 统一资源标记符。/WebRoot/hello。用于标记任何资源。可�
 
 redis zadd(name, key, score): 有序集合，和集合都是成员是唯一的。zrangebyscore(name, min, max): 返回score在min和max之间的key。
 redis hmget(name, keys): 获取给定keys的值，key的顺序对应值顺序。
+
+Renaming a virtualenv folder without breaking it:
+    1. cpvirtualenv oldenv newenv
+    2. rmvirtualenv oldenv
+
