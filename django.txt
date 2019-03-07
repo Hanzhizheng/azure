@@ -284,3 +284,69 @@ class CustomRouter(DefaultRouter):
         cursor.fetchone()
         cursor.fetchall()
 --------
+DATABASES = {
+        'default': {
+            ...
+            'ATOMIC_REQUESTS': True,
+        }
+    }
+同一个http请求对应的所有sql都放在一个事务中执行，要么所有都成功，要么所有都失败，是全局性的配置，如果要对某个http请求放水，然后自定义事务，
+可以用non_atomic_requests修饰器
+
+    from django.db import transaction
+
+    class xxx(xxxView):
+        @transaction.non_atomic_requests
+        def post(self, request, *args, **kwargs):
+            ...
+----------
+Whenever you log an exception, it’s usually helpful to log the stack trace of the exception. Python’s logging module supports this:
+    1 Logger.exception() automatically includes the traceback and logs at ERROR level. . .
+    2 For other log levels, use the optional exc_info keyword argument.
+e.g:
+    import logging
+    import requests
+    logger = logging.getLogger(__name__)
+    def get_additional_data():
+    try:
+        r = requests.get("http://example.com/something-optional/")
+    except requests.HTTPError as e:
+        logger.exception(e)
+        logger.debug("Could not get additional data", exc_info=True)
+        return None
+    return r
+----------
+BinaryField: remember that binary data can come in huge chunks, which can slow down databases. If this occurs and becomes a bottleneck(瓶颈), the solution might be to save the binary data in a file and reference it with a FileField.
+----------
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config.default_db.db_name,
+        'USER': config.default_db.db_user,
+        'PASSWORD': config.default_db.db_password,
+        'HOST': config.default_db.db_host,
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+        },
+        'TEST': {
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_bin',
+        },
+    }
+}
+utf8mb4_bin 大小写敏感
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
+----------
