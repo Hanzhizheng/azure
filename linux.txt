@@ -4,3 +4,11 @@ chsh -s /bin/zsh
     使用zsh作为默认终端
 find . -name '*.py' |xargs grep test
     在当前目录中找到所有.py文件，通过xargs将标准输入转成参数，传递给grep搜索含有固定字符串'test'的文件。
+grep -o 'haha' file | wc -l
+    统计 haha 在文件 file 中总共出现的次数
+iotop
+    使用 iotop 从进程纬度查看磁盘 IO 负载
+iostat -d -k 2  # -d 显示设备（磁盘）使用状态。 # -k 让某些使用 block 为单位的列强制使用 kB 为单位。 # 2 数据显示每隔2秒刷新一次。
+    使用 iostat 从系统纬度查看磁盘 IO 负载
+In .zshrc alias pmr="python manage.py runserver"
+    添加自定义命令

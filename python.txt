@@ -462,15 +462,8 @@ class Fib(object):
 from argparse import RawTextHelpFormatter
 parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
 parser.add_argument() 在help使用 \n 可以换行
-----------
-parser.add_argument()
-    python test.py --help
-    -h, --help         show this help message and exit
-    -u URL, --url URL  n: new  f: fin  j: jing5  g: guo6
-parser.add_argument(dest='')
-    python test.py --help
-    -h, --help   show this help message and exit
-    -u , --url   n: new  f: fin  j: jing5  g: guo6
+
+The dest paramter told argparse to use a variable named in dest, not in '--name'
 ----------
 Python跳过第一行读取文件内容
 from itertools import islice
@@ -540,4 +533,35 @@ import dis
 code=compile('print "a"', '', 'exec')
 print dis.disassemble(code)
 ----------
+上下左右箭头乱码: pip install readline
+----------
+In [4]: filter(None,[1,2,None,3,None])
+Out[4]: [1, 2, 3]
+----------
+import os, psutil
+查看内存信息: psutil.Process(os.getpid()).memory_info()
+返回 pmem(rss, vms, pfaults, pageins), rss: Resident Set Size, 实际使用物理内存, 单位字节数
+----------
+try:
+    1/0
+except ZeroDivisionError as e:
+    raise
+print:
+Traceback (most recent call last):
+  File "qtest.py", line 7, in <module>
+    1/0
+ZeroDivisionError: integer division or modulo by zero
+
+# 不知道哪里报错:
+try:
+    1/0
+except ZeroDivisionError as e:
+    raise e
+print
+Traceback (most recent call last):
+  File "qtest.py", line 9, in <module>
+    raise e
+ZeroDivisionError: integer division or modulo by zero
+----------
+Multiple if's means your code would go and check all the if conditions, where as in case of elif, if one if condition satisfies it would not check other conditions..
 ----------

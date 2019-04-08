@@ -19,6 +19,13 @@ aggregate的逻辑比较简单，应用场景比较窄，如果你想要对数�
 In [30]: models.Truck.objects.values('vehicle_running_status').annotate(count=Count('vehicle_running_status'))
 Out[30]: [{'count': 974, 'vehicle_running_status': u'offline'}, {'count': 2128, 'vehicle_running_status': u'alerting'}, {'count': 37, 'vehicle_running_status': u'charging'}, {'count': 39, 'vehicle_running_status': u'driving'}, {'count': 63, 'vehicle_running_status': u'stopped'}]
 
+Restframework:
+ipdb> models.Truck.objects.all().values('finance_type').annotate(Count('finance_type'))
+[{'finance_type__count': 6, 'finance_type': u'0'}, {'finance_type__count': 1, 'finance_type': u'4'}, {'finance_type__count': 1, 'finance_type': u'3'}, {'finance_type__count': 1, 'finance_type': u'2'}]
+
+ipdb> queryset.values('finance_type').annotate(Count('finance_type')).order_by('finance_type')
+[{'finance_type__count': 6, 'finance_type': u'0'}, {'finance_type__count': 1, 'finance_type': u'2'}, {'finance_type__count': 1, 'finance_type': u'3'}, {'finance_type__count': 1, 'finance_type': u'4'}]
+----------
 In [17]: truck_model.truck_set.values_list('vin')
 Out[17]: [(u'LGHB2V190FC200001',), (u'HBLDZO973WO781300',)]
 
@@ -32,6 +39,11 @@ myapps = App.objects.filter(~Q(name=''))
 django-rest-swagger
 You can prevent django-rest-swagger from using any serializer:
     omit_serializer: true
+
+omit_parameters:
+  - query
+parameters_strategy:
+  form: replace
 
 models.CASCADE: 默认为models.CASCADE, 级联删除. 当删除'一'时, '多'会被删除.
 
@@ -338,10 +350,17 @@ DATABASES = {
 }
 utf8mb4_bin 大小写敏感
 ----------
+遵守“不测试常量”规则，单元测试要测试的其实是逻辑、流程控制和配置。
 ----------
+Book.object.all().only('name'), id始终会查, 如果取price, 发生了什么? 它会再次查询数据库,对数据库造成压力.
 ----------
+Django provides a method_decorator to use decorators with class based views.
+from django.utils.decorators import method_decorator
 ----------
+You can reduce memory consumption through use of iterator method:
+    for article in Article.objects.select_related('author').iterator()
 ----------
+migrate 使用--fake参数：--fake只会将迁移脚本的版本号记录到django_migrations中，而并不会执行这个迁移脚本。所以如果是数据库中的表和模型都已经完成了映射，但是版本号对不上，那么可以使用这种方式解决。
 ----------
 ----------
 ----------

@@ -64,3 +64,5 @@ Renaming a virtualenv folder without breaking it:
     1. cpvirtualenv oldenv newenv
     2. rmvirtualenv oldenv
 
+Mac窗口工具: spectacleapp
+
