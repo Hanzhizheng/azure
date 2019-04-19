@@ -12,3 +12,6 @@ iostat -d -k 2  # -d 显示设备（磁盘）使用状态。 # -k 让某些使�
     使用 iostat 从系统纬度查看磁盘 IO 负载
 In .zshrc alias pmr="python manage.py runserver"
     添加自定义命令
+解压多个卷: 例如 linux.zip.001, linux.zip.002, linux.zip.003。
+    1、cat linux.zip* > linux.zip  # 合并为一个zip包。
+    2、unzip linux.zip  # 解压zip包。

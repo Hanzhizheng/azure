@@ -362,10 +362,252 @@ You can reduce memory consumption through use of iterator method:
 ----------
 migrate 使用--fake参数：--fake只会将迁移脚本的版本号记录到django_migrations中，而并不会执行这个迁移脚本。所以如果是数据库中的表和模型都已经完成了映射，但是版本号对不上，那么可以使用这种方式解决。
 ----------
+class A(models.Model):
+    x = models.BooleanField(default=True)
+
+class B(models.Model):
+    y = models.ManyToManyField(A)
+
+class C(models.Model):
+    z = models.ForeignKey(A)
+In this scenario, C.objects.all().prefetch_related('z__b_set') doesn't work.
+
+C.objects.all().select_related('z').prefetch_related('z__b_set') work.
 ----------
+select_related()的效率要高于prefetch_related()。因此，最好在能用select_related()的地方尽量使用它，也就是说，对于ForeignKey字段，避免使用prefetch_related()。
 ----------
+Django Debug Toolbar In Rest Api:
+setting:
+    if DEBUG:
+        COMPRESS_ROOT = STATIC_ROOT
+        COMPRESS_URL = STATIC_URL
+        MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
+        INTERNAL_IPS = ('127.0.0.1',)
+        INSTALLED_APPS += ( 'debug_toolbar',)
+        DEBUG_TOOLBAR_CONFIG = {
+            "JQUERY_URL": '//cdn.bootcss.com/jquery/2.2.4/jquery.min.js',
+        }
+url:
+    if settings.DEBUG:
+        import debug_toolbar
+        urlpatterns = [
+            url(r'^__debug__/', include(debug_toolbar.urls)),
+        ] + urlpatterns
+
+django debug toolbar 对于json数据、gzip数据是不会返回toolbar的，在写api的时候，通常都会返回gzip的json数据，因此我们需要做一些改进:
+
+# -*- coding: utf-8 -*-
+from cStringIO import StringIO
+import gzip
+from django.http import HttpResponse
+
+class DebugToolbar4JsonMiddleware(object):
+    RESPONSE_TYPES = ('application/json',)
+
+    def process_response(self, request, response):
+        if 'gzip' in response.get('Content-Encoding', ''):
+            sio = StringIO(response.content)
+            f = gzip.GzipFile(fileobj=sio)
+            content = f.read()
+            f.close()
+        else:
+            content = response.content
+
+        if response.get('Content-Type', '').split(';')[0] in self.RESPONSE_TYPES:
+            return HttpResponse(
+                '''
+                <html><body>
+                  <script>
+                    var data = %s;
+                    document.write("<pre>");
+                    document.write(JSON.stringify(data, null, 4));
+                    document.write("</pre>");
+                  </script>
+                </body></html>''' % content
+            )
+        return response
+
+
+将该middleware中加入到settings.py中，注意：确保该middleware在 debug_toolbar.middleware.DebugToolbarMiddleware 的后面。
+
+使用 django-debug-panel 可以debug post api:
+
+Install and configure Django Debug Toolbar
+
+1. Install Django Debug Panel:
+    pip install django-debug-panel
+2. Add debug_panel to your INSTALLED_APPS setting:
+    INSTALLED_APPS = (
+        # ...
+        'debug_panel',
+    )
+3. Replace the Django Debug Toolbar middleware with the Django Debug Panel one. Replace:
+    MIDDLEWARE_CLASSES = (
+        ...
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+        ...
+    )
+    with:
+    MIDDLEWARE_CLASSES = (
+        ...
+        'debug_panel.middleware.DebugPanelMiddleware',
+        ...
+    )
+    with django-debug-panel, 'owl.common.middleware.DebugToolbar4JsonMiddleware' not need.
+
+4. Install the Chrome extension Django Debug Panel
+
+add Profiling
+    Path: debug_toolbar.panels.profiling.ProfilingPanel
 ----------
+In some cases, two queries may perform much better than one; you can get the ids from the first query and pass them into the second query:
+    tag_ids = (Post.objects.all().values_list('id', flat=True).distinct())
+    tags = Tag.objects.filter(id__in=tag_ids)
 ----------
+If the properties are accessedmorethan once per request, you can optimize them with memoization
+from django.utils.functional import cached_property
+class TheModel(models.Model):
+    ...
+    @cached_property
+    def expensive(self):
+        # expensive computation of result
+        return result
 ----------
+from django.db.models import Prefetch
+Using Prefetch allows us to define the queryset for the prefetch. This means we can use select_related() to merge the comments and comments__author queries into one.
+queryset = (
+    BlogPost.objects.prefetch_related(
+        Prefetch(
+                'comments', queryset=Comment.objects.select_related('author')
+        )
+    )
+)
 ----------
+Django 设置了三个内置的 loggers。
+
+django 是用来捕捉所有输出的记录器。没有消息会直接发送到这个记录器上。
+
+django.request 记录与 request 请求处理相关的消息。5XX 的返回会触发 ERROR 消息的记录；4XX 的返回会触发 WARNING 消息的记录。这一记录器的拥有下面两个额外内容：status_code 和 request。
+
+django.db.backends 记录代码中与数据库交互有关的消息。比如，每个 request 请求触发的 SQL 语句执行时都会被以 DEBUG 级别的消息交给 logger 处理。这一记录器拥有下面的额外内容：duration, sql, params.
+
+出于性能的考虑，SQL 记录器只有在 settings.DEBUG 设置为 True 时才有效，此时不管日志级别的任何设置。
 ----------
+    The 'disable_existing_loggers': True statement at the top of LOGGING disables Django's default logging configuration. This guarantees (确保) no default logging behavior is applied to a Django project.
+
+An alternative to disabling Django default logging behavior is to override the default logging definitions on an individual basis, as any explicit LOGGING configuration in settings.py takes precedence over Django defaults even when 'disable_existing_loggers': False.
+
+Notice if you want to use default filters or something else, the same default filters need to be re-declared, since the default filters are lost when 'disable_existing_loggers': True.
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'formatters': {
+        'simple': {
+            'format': '[%(asctime)s] %(levelname)s %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+        'verbose': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'development_logfile': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.FileHandler',
+            'filename': '/tmp/django_dev.log',
+            'formatter': 'verbose'
+        },
+        'production_logfile': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/django/django_production.log',
+            'maxBytes' : 1024*1024*100, # 100MB
+            'backupCount' : 5,
+            'formatter': 'simple'
+        },
+        'dba_logfile': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_false','require_debug_true'],
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': '/var/log/dba/django_dba.log',
+            'formatter': 'simple'
+        },
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console'],
+    },
+    'loggers': {
+        'coffeehouse': {
+            'handlers': ['development_logfile','production_logfile'],
+         },
+        'dba': {
+            'handlers': ['dba_logfile'],
+        },
+        'django': {
+            'handlers': ['development_logfile','production_logfile'],
+        },
+        'py.warnings': {
+            'handlers': ['development_logfile'],
+        },
+    }
+}
+
+
+   There's the root key, which although declared outside of the loggers section, is actually the root logger for all loggers. The root key tells Django to process messages from all loggers -- whether declared or undeclared in the configuration -- and handle them in a given in way. In this case, root tells Django that all log messages -- since the DEBUG level includes all messages -- generated by any logger (coffeehouse, dba, django, py.warnings or any other) be processed by the console handler.
+----------
+Set up a Django application to use Sentry
+To use Sentry in a Django project you require a package called Raven to establish (建立) communication between the two parties. Simply do pip install raven to install the latest Raven version.
+
+Once you install Raven, you must declare it in the INSTALLED_APPS list of your project's settings.py file as illustrated in listing 5-19. In addition, it's also necessary to configure Raven to communicate with a specific Sentry project via a DSN value, through the RAVEN_CONFIG variable also shown in listing 5-19.
+
+Listing 5-19 Django project configuration to communicate with Sentry via Raven
+
+INSTALLED_APPS = [
+    ...
+    'raven.contrib.django.raven_compat',
+    ...
+]
+
+RAVEN_CONFIG = {
+    'dsn': '<your_dsn_value>@sentry.io/<your_dsn_value>',
+}
+
+As you can see in listing 5-19, the RAVEN_CONFIG variable should declare a dsn key with a value corresponding to (与…相一致) the DSN value from the Sentry project that's to receive the log messages.
+
+After you set up this minimum Raven configuration, you can send a test message running the python manage.py raven test command from a Django project's command line. If the test is successful, you will see a test message in the Sentry dashboard presented in Sentry SaaS project dashboard.
+
+Once you confirm communication between your Django project and Sentry is successful, you can set up Django logging to send log messages to Sentry. To Django's logging mechanism, Sentry is seen as any other handler (e.g. file, stream), so you must first declare Sentry as a logging handler using the raven.contrib.django.handlers.SentryHandler class, as illustrated in listing 5-20.
+
+Listing 5-20 Django logging handler for Sentry/Raven
+
+LOGGING = {
+...
+ 'handlers': {
+       ....
+        'sentry': {
+            'level': 'ERROR',
+            'class': 'raven.contrib.django.handlers.SentryHandler',
+        },
+       ...
+  }
+The sentry handler in listing 5-20 tells Django to handle log messages with an ERROR level through Sentry. Once you have a Sentry handler, the last step is to use the sentry handler on loggers to assign which packages/loggers get processed through Sentry.

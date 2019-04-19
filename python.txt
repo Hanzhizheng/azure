@@ -565,3 +565,38 @@ ZeroDivisionError: integer division or modulo by zero
 ----------
 Multiple if's means your code would go and check all the if conditions, where as in case of elif, if one if condition satisfies it would not check other conditions..
 ----------
+默认情况下，我们自己定义的类的实例总被认为是真的，除非这个类对 __bool__ 或者 __len__ 函数有自己的实现。
+    class A(object):
+        def __len__(self):
+            return 0
+    a = A()
+    print bool(a)  # False
+
+    class A(object):
+        pass
+    a = A()
+    print bool(a)  # True
+----------
+Python 标准库用 C 实现了丰富的序列类型，列举如下。
+容器序列
+    list、tuple 和 collections.deque 这些序列能存放不同类型的数据。
+扁平序列
+    str、bytes、bytearray、memoryview 和 array.array，这类序列只能容纳一种类型。
+容器序列存放的是它们所包含的任意类型的对象的引用，而扁平序列里存放的是值而不是引用。换句话说，扁平序列其实是一段连续的内存空间。
+----------
+inspect模块用于收集python对象的信息，可以获取类或函数的参数的信息，源码，解析堆栈，对对象进行类型检查等等
+----------
+显示毫秒 & %F %X
+In [2]: print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
+2019-04-18 11:35:22.137031
+
+In [5]: print(datetime.datetime.now().strftime('%F %X'))
+2019-04-18 11:35:44
+----------
+If an object defines both __get__() and __set__(), it is considered a data descriptor.
+Descriptors that only define __get__() are called non-data descriptors (they are typically used for methods but other uses are possible).
+
+If an instance’s dictionary has an entry with the same name as a data descriptor, the data descriptor takes precedence.
+If an instance’s dictionary has an entry with the same name as a non-data descriptor, the dictionary entry takes precedence.
+
+To make a read-only data descriptor, define both __get__() and __set__() with the __set__() raising an AttributeError when called

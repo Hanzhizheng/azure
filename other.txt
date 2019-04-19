@@ -1,4 +1,5 @@
 git diff HEAD HEAD~1: 查看上一次提交的改动
+git push origin -d somebranch 删除远程分支
 cloc: 统计代码行数
 screen -ls 列出screen
 screen -S name 新建screen
