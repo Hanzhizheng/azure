@@ -141,20 +141,23 @@ Ignore some testcases:
 静态字段只在内存中保存一份，普通字段在每个对象中都要保存一份。方法方法包括：普通方法、静态方法和类方法，三种方法在内存中都归属于类，区别在于调用方式不同。
 ----------
 think of the Logger logging level as a global restriction on which messages are "interesting" for a given logger and its handlers. The messages that are considered by the logger afterwards get sent to the handlers, which perform their own filtering and logging process.
-import logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-fromatter = logging.Formatter('%(asctime)s-%(message)s')
-handler = logging.StreamHandler()
-handler.setLevel(logging.ERROR)
-handler.setFormatter(fromatter)
-logger.addHandler(handler)
-try:
-    open('/path/to/does/not/exist', 'rb')
-except (SystemExit, KeyboardInterrupt):
-    raise
-except Exception, e:
-    logger.error('Failed to open file', exc_info=True)
+
+.. code:: python
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    fromatter = logging.Formatter('%(asctime)s-%(message)s')
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.ERROR)
+    handler.setFormatter(fromatter)
+    logger.addHandler(handler)
+    try:
+        open('/path/to/does/not/exist', 'rb')
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception, e:
+        logger.error('Failed to open file', exc_info=True)
+
 logger按info过滤，之后传给它的handlers，handler有自己的level规则，按error再过滤传来的log。
 ----------
 ord('E')以一个字符（长度为1的字符串）作为参数，返回对应的 ASCII 数值，或者 Unicode 数值。
@@ -318,45 +321,42 @@ The threading library defines the following objects for synchronizing threads. s
     A combination of locking/signaling.
 ----------
 There are three major setup.py commands we will use:
-
+::
     bdist_egg: This creates an egg file. This is what is necessary so someone can use easy_install your_project.
     bdist_wininst: This will create an .exe that will install your project on a windows machine.
     sdist: This create a raw source distribution which someone can download and run python setup.py directly.
 ----------
 traceback.print_exc()跟traceback.format_exc()有什么区别呢？
+::
     format_exc()返回字符串，print_exc()则直接给打印出来。
         即traceback.print_exc()与print traceback.format_exc()效果是一样的。
     print_exc()还可以接受file参数直接写入到一个文件。比如
         traceback.print_exc(file=open('tb.txt','w+'))
 ----------
-import sys
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+.. code:: python
+    import sys
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
 
+    def hook(exc_type, exc_value, exc_traceback):
+        logger.debug('%s-%s-%s' % (exc_type, exc_value, exc_traceback.tb_lineno))
 
-def hook(exc_type, exc_value, exc_traceback):
-    logger.debug('%s-%s-%s' % (exc_type, exc_value, exc_traceback.tb_lineno))
+    sys.excepthook = hook
 
-
-sys.excepthook = hook
-
-
-def test():
+    def test():
     raise Exception('test')
 
 
-if __name__ == '__main__':
-    test()
+    if __name__ == '__main__':
+        test()
 
->>>DEBUG:__main__:<type 'exceptions.Exception'>-test-19
+    >>> DEBUG:__main__:<type 'exceptions.Exception'>-test-19
 ----------
-Use isort to automate import sorting using the guidelines below.
-
-Quick start:
-
-$ pip install isort
-$ isort -rc .
+Use isort to automate import sorting using the guidelines below
+::
+    $ pip install isort
+    $ isort -rc .
 ----------
 注释代码:
     NOTE: Description of how the code works (when it isn't self evident).
@@ -398,6 +398,9 @@ response = self.client_patch(
     content_type="application/json",
 )
 ----------
+eval 在做计算前并不知道需要转化的内容是不是合法的python数据类型。只是在调用函数的时候去计算。如果被计算的内容不是合法的python类型就会抛出异常。
+ast.literal则会判断需要计算的内容计算后是不是合法的python类型，如果是则进行运算，否则就不进行运算。
+推荐使用ast.literal_eval
 >>> import ast
 >>> ast.literal_eval("545.2222")
 545.2222
@@ -432,28 +435,30 @@ def application(environ, start_response):
     return '<h1>Hello, web!</h1>'
 无论多么复杂的Web应用程序，入口都是一个WSGI处理函数。HTTP请求的所有输入信息都可以通过environ获得，HTTP响应的输出都可以通过start_response()加上函数返回值作为Body。
 ----------
-__new__方法接受的参数虽然也是和__init__一样，但__init__是在类实例创建之后调用，而 __new__方法正是创建这个类实例的方法。
-def __new__(cls, name, age):
-    print '__new__ called.'
-    return super(Person, cls).__new__(cls, name, age)
-def __init__(self, name, age):
-    print '__init__ called.'
-    self.name = name
-    self.age = age
+::
+    __new__方法接受的参数虽然也是和__init__一样，但__init__是在类实例创建之后调用，而 __new__方法正是创建这个类实例的方法。
+.. code:: python
+    def __new__(cls, name, age):
+        print '__new__ called.'
+        return super(Person, cls).__new__(cls, name, age)
+    def __init__(self, name, age):
+        print '__init__ called.'
+        self.name = name
+        self.age = age
 ----------
+.. code:: python
+    class Fib(object):
+        def __init__(self):
+            self.a, self.b = 0, 1 # 初始化两个计数器a，b
 
-class Fib(object):
-    def __init__(self):
-        self.a, self.b = 0, 1 # 初始化两个计数器a，b
+        def __iter__(self):
+            return self # 实例本身就是迭代对象，故返回自己
 
-    def __iter__(self):
-        return self # 实例本身就是迭代对象，故返回自己
-
-    def next(self):
-        self.a, self.b = self.b, self.a + self.b # 计算下一个值
-        if self.a > 100000: # 退出循环的条件
-            raise StopIteration();
-        return self.a # 返回下一个值
+        def next(self):
+            self.a, self.b = self.b, self.a + self.b # 计算下一个值
+            if self.a > 100000: # 退出循环的条件
+                raise StopIteration();
+            return self.a # 返回下一个值
 ----------
 对于container类型（列表是典型的container），可以直接用于for循环进行遍历。而将列表转化成迭代器Iterator进行遍历，效果似乎一样。
 
@@ -481,14 +486,15 @@ for 循环还有一个 else 从句，这个 else 从句会在循环正常结束�
 * 第二个场景是循环结束。
 现在我们也许想知道其中哪一个，才是导致循环完成的原因。一个方法是先设置一个标记，然后在循环结束时打上标记。另一个是使用 else 从句。
 这就是 for/else 循环的基本结构：
-for item in container:
-    if search_something(item):
-        # Found it!
-        process(item)
-        break
-else:
-    # Didn't find anything..
-    not_found_in_container()
+.. code:: python
+    for item in container:
+        if search_something(item):
+            # Found it!
+            process(item)
+            break
+    else:
+        # Didn't find anything..
+        not_found_in_container()
 ----------
 PEP8 换行
 
@@ -542,30 +548,35 @@ import os, psutil
 查看内存信息: psutil.Process(os.getpid()).memory_info()
 返回 pmem(rss, vms, pfaults, pageins), rss: Resident Set Size, 实际使用物理内存, 单位字节数
 ----------
-try:
-    1/0
-except ZeroDivisionError as e:
-    raise
+.. code:: python
+    try:
+        1/0
+    except ZeroDivisionError as e:
+        raise
 print:
-Traceback (most recent call last):
-  File "qtest.py", line 7, in <module>
-    1/0
-ZeroDivisionError: integer division or modulo by zero
+::
+    Traceback (most recent call last):
+      File "qtest.py", line 7, in <module>
+        1/0
+    ZeroDivisionError: integer division or modulo by zero
 
 # 不知道哪里报错:
-try:
-    1/0
-except ZeroDivisionError as e:
-    raise e
-print
-Traceback (most recent call last):
-  File "qtest.py", line 9, in <module>
-    raise e
-ZeroDivisionError: integer division or modulo by zero
+.. code:: python
+    try:
+        1/0
+    except ZeroDivisionError as e:
+        raise e
+print:
+::
+    Traceback (most recent call last):
+      File "qtest.py", line 9, in <module>
+        raise e
+    ZeroDivisionError: integer division or modulo by zero
 ----------
 Multiple if's means your code would go and check all the if conditions, where as in case of elif, if one if condition satisfies it would not check other conditions..
 ----------
 默认情况下，我们自己定义的类的实例总被认为是真的，除非这个类对 __bool__ 或者 __len__ 函数有自己的实现。
+.. code:: python
     class A(object):
         def __len__(self):
             return 0
@@ -600,3 +611,26 @@ If an instance’s dictionary has an entry with the same name as a data descript
 If an instance’s dictionary has an entry with the same name as a non-data descriptor, the dictionary entry takes precedence.
 
 To make a read-only data descriptor, define both __get__() and __set__() with the __set__() raising an AttributeError when called
+----------
+fabric带参数用法:
+def hello(name="world"):
+    print("Hello %s!" % name)
+
+$ fab hello:name=Jeff
+Hello Jeff!
+----------
+convert timedela to seconds:
+    >>> import datetime
+    >>> datetime.timedelta(seconds=24*60*60).total_seconds()
+    86400.0
+----------
+numpy set difference
+In [80]: aa
+Out[80]: array([1, 2, 3, 4, 5, 6, 7, 8])
+
+In [81]: bb
+Out[81]: array([2, 3, 4, 5])
+
+In [79]: np.setdiff1d(aa,bb)
+Out[79]: array([1, 6, 7, 8])
+----------

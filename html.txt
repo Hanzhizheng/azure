@@ -93,3 +93,9 @@ Here's an example:
     <track kind="subtitles" src="subtitles_en.vtt" srclang="en">
 </video>
 ----------
+阻止 chrome 下载文件通过from disk cache直接下载:
+    响应头:
+        response['Expires'] = 0
+        response['Cache-Control'] = 'no-cache'
+        response['Pragma'] = 'no-cache'
+----------

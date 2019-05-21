@@ -611,3 +611,202 @@ LOGGING = {
        ...
   }
 The sentry handler in listing 5-20 tells Django to handle log messages with an ERROR level through Sentry. Once you have a Sentry handler, the last step is to use the sentry handler on loggers to assign which packages/loggers get processed through Sentry.
+----------
+An exception is that if CharField has both unique=True and blank=True then null=True is also required to avoid unique constraint (限制) violations (违反) when saving multiples objects with blank values.
+----------
+Django automatically creates an index for all models.ForeignKey columns.
+----------
+使用Vary头部信息
+django默认使用请求路径和查询作为缓存关键字，比如/stories/2005/?order_by=author，这意味着所有请求该url的请求都是用同一个缓存页面，如果这个页面是根据不同的请求头部信息而生成不一样的页面的时候，你需要使用Vary头部去告诉缓存机制要根据这些不同的头部信息输出不同的内容。
+为了做到这一点，django提供了vary_on_header视图装饰器
+.. code:: python
+    from django.views.decorators.vary import vary_on_headers
+
+    @vary_on_headers('User-Agent')
+    def my_view(request):
+        # ...
+上面的这个例子，django的缓存机制会为每一个user-agent缓存一个单独的页面。
+vary_on_header装饰器接受多个参数，比如Cookie和User-Agent，多个参数之间是组合关系；
+----------
+自定义renderer下载文件:
+
+views:
+.. code:: python
+    from rest_framework.enderers import BaseRenderer
+    from rest_framework.response import Response
+    from rest_framework import generics
+
+
+    class BinaryFileRenderer(BaseRenderer):
+        media_type = 'application/octet-stream'
+        format = None
+        charset = None
+        render_style = 'binary'
+
+        def render(self, data, media_type=None, renderer_context=None):
+            return data
+
+
+    class FileauthView(generics.GenericAPIView):
+        renderer_classes = (BinaryFileRenderer,)
+
+        def get(self, request, *args, **kwargs):
+            with open('./.well-known/pki-validation/fileauth.txt', 'rb') as report:
+                return Response(
+                    report.read(),
+                    headers={'Content-Disposition': 'attachment; filename="fileauth.txt"'},
+                    content_type='text/plain')
+urls:
+.. code:: python
+    url(r'^.well-known/pki-validation/fileauth.txt/',
+        FileauthView.as_view(),
+    ),
+----------
+uwsgi --http :7799 --wsgi-file owl/wsgi.py -H ~/.virtualenvs/dfjk --http-timeout 3600 -L --log-4xx --workers 4
+    --http-socket = 127.0.0.1:8080: 指定ip地址
+    -H | --virtualenv: set PYTHONHOME/virtualenv
+    --http-timeout: 设置超时时间
+    -L | --disable-logging: disable request logging
+    --log-4xx: enable 4xx status request logging, --log-5xx and so on.
+
+    --log-drain r'notification.*200'
+    --log-drain: drain (do not show) log lines matching the specified regexp
+    --log-filter: show only log lines matching the specified regexp
+
+    --log-format: "%(method) %(host)%(uri) %(status) in %(msecs) ms"
+
+In nginx:
+    uwsgi_read_timeout: 默认60秒，nginx等待uwsgi进程发送响应数据的超时时间。
+    uwsgi_send_timeout: 默认60秒，nginx向uwsgi进程发送请求的超时时间。
+----------
+How turn off request info in console:
+    In Your Site-packages or VirtualEnv (if You're using it) directory,
+    go to folder structure django / core / servers / basehttp.py
+    then goto Class WSGIRequestHandler, function def log_message(self, format, *args)
+e.g:
+    if args[1][0] == '2':
+        # Put 2XX first, since it should be the common case
+        if 'notification' in msg:
+            msg = ''
+        msg = self.style.HTTP_SUCCESS(msg)
+----------
+DEBUG 为 False 的时候如何访问static和media:
+.. code:: python
+    if not settings.DEBUG:
+        urlpatterns += [
+            url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
+            url(r'^static/(?P<path>.*)$', 'django.views.static.serve',{'document_root':settings.STATIC_ROOT}),
+        ]
+e.g: 这种情况可以看到url
+[06/May/2019 10:00:46] "GET /media/alert_list/alert_None_None.xls HTTP/1.1" 200 5632
+
+[06/May/2019 10:10:34] "GET /static/admin/css/dashboard.4898e2e9983d.css HTTP/1.1" 200 434
+[06/May/2019 10:10:34] "GET /static/admin/css/base.9f6547179ace.css HTTP/1.1" 200 16062
+    ...
+
+自定义django.views.static.serve:
+.. code:: python
+    from django.views.static import serve
+
+    def authorization_serve(request, path, document_root=None, show_indexes=False):
+        if 'HTTP_AUTHORIZATION' in request.META:
+            return serve(request, path, document_root, show_indexes)
+        return
+
+    if not settings.DEBUG:
+        urlpatterns += [
+            url(r'^media/(?P<path>.*)$', authorization_serve, {'document_root': settings.MEDIA_ROOT}),
+            url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
+        ]
+----------
+Restframework Response class extends SimpleTemplateResponse, and all the usual attributes and methods are also available on the response. For example you can set headers on the response in the standard way:
+    response = Response()
+    response['Cache-Control'] = 'no-cache'
+----------
+.. code:: python
+    class CaptchaView(views.APIView):
+        '''图形验证码
+        ---
+        GET:
+          type:
+            hashkey:
+              type: string
+              description: 图形验证码hash key
+            image_url:
+              type: string
+              description: 图形验证码图片地址
+        '''
+        authentication_classes = ()
+        permission_classes = ()
+
+        def get(self, request):
+            hashkey = CaptchaStore.generate_key()
+            image_url = captcha_image_url(hashkey)
+            captcha = {'hashkey': hashkey, 'image_url': request.build_absolute_uri(image_url)}
+            return Response({'data': captcha})
+
+    >>> request.build_absolute_uri(image_url)  # 返回完整的uri
+    >>> http://192.168.3.113:7799/captcha/image/3d81cb8c4e2799c606e58a5fc0331156962c318d/
+----------
+DJANGO SETTINGS USING HTTPS:
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+----------
+返回带https的media文件url: request.META['wsgi.url_scheme'] = 'https'
+----------
+nginx -c /etc/nginx/nginx.conf
+    -c 配置文件，表示根据指定文件启动
+    -t 可以查看是根据那个配置文件启动的
+    -s signal: send signal to a master process: stop, quit, reopen, reload
+----------
+nginx https:
+django:
+    runserver:
+        192.168.3.113:7799
+    settings:
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # 返回地址http -> https, 例如:
+            request: https://192.168.3.113:6443/auth/captcha/get/
+            response: hashkey "a334c1d1307f96baf59f2b1c68cf915d7ffc631b"
+                      image_url "https://192.168.3.113:6443/captcha/image/a334c1d1307f96baf59f2b1c68cf915d7ffc631b/"
+
+nginx:
+    events {
+        worker_connections 1024;
+    }
+    http {
+        server {
+            listen 6443 ssl;
+            ssl_certificate     /Users/zzz/b/Dfjk4NewEnergy/foobar.crt;
+            ssl_certificate_key /Users/zzz/b/Dfjk4NewEnergy/foobar.key;
+            location / {
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Host $http_host;
+                # 不设置, image_url返回 192.168.3.113:7799, 设置, image_url返回 192.168.3.113:6443
+                proxy_pass http://192.168.3.113:7799;
+            }
+        }
+    }
+The *proxy_redirect* off statement tells nginx that, if the backend returns an HTTP redirect, it should leave it as is.
+----------
+swagger use request_serializer and response_serializer:
+.. code:: python
+    def find_jambalaya(request):
+        """
+        Retrieve a *jambalaya* recipe by name or country of origin
+        ---
+        request_serializer: JambalayaQuerySerializer
+        response_serializer: JambalayaSerializer
+        """
+        if request.method == 'POST':
+            serializer = JambalayaQuerySerializer(data=request.DATA)
+            if serializer.data['name'] is not None:
+                j = Jambalaya.objects.filter(recipe__contains='name=%s' % serializer.data['name'])
+            else:
+                j = Jambalaya.objects.filter(recipe__contains="country=%s" % serializer.data['origin'])
+            serializer = JambalayaSerializer(j, many=True)
+            return Response(serializer.data)
+        else:
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+----------

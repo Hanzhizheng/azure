@@ -1,6 +1,6 @@
-git diff HEAD HEAD~1: 查看上一次提交的改动
-git push origin -d somebranch 删除远程分支
+----------
 cloc: 统计代码行数
+----------
 screen -ls 列出screen
 screen -S name 新建screen
 screen -r name 登入screen
@@ -9,8 +9,15 @@ ctrl a + d 从当前screen返回
 不进入screen删除: screen -S session_name -X quit
 进入screen输入exit删除
 ctrl a + n & p next & prev: 切换上一个下一个tab
+----------
+git diff HEAD HEAD~1: 查看上一次提交的改动
+git push origin -d somebranch 删除远程分支
 git 通过 comment 关键字查找commit: git log --grep=keyword
-一条 查看某次commit内容: git show commitID
+git 查看某次commit内容: git show commitID
+当我想从远程仓库里拉取一条本地不存在的分支时：
+    git checkout -b 本地分支名 upstream/远程分支名
+这个将会自动创建一个新的本地分支，并与指定的远程分支关联起来。
+----------
 vscode:
     ctrl+z undo { "key": "cmd+y", "command": "redo", "when": "editorTextFocus" }
     插件: Paste and Indent, One Dark Pro, Python, vscode-icons
@@ -28,42 +35,59 @@ vscode:
     "python.formatting.provider": "autopep8",
     "pasteAndIndent.selectAfter": true,
 }
-
+----------
 zsh: alias | grep git 查看git简写
-
+----------
 python -m SimpleHTTPServer [port]  # 当前目录开启一个小的文件服务器, 默认端口8000
 # 另外，python 3,中是 python -m http.server
+----------
 python -m this               # python's Zen
 python -m calendar           # 显示一个日历
 echo '{"json":"obj"}' | python -mjson.tool  # 漂亮地格式化打印json数据
 echo '{"json":"obj"}' | python -mjson.tool | pygmentize -l json # 高亮地打印json格式化
 python -m antigravity       # 这个该自己试试
-
+----------
 git本地没有远程某个分支
     git branch -va: 查看本地和远程分支
     git checkout -t upstream/test: 能够直接新建本地分支，将远程分支提取出来。
-
+----------
 组合模式(Composite Pattern)：组合多个对象形成树形结构以表示具有“整体—部分”关系的层次结构。
-
+----------
 git 提交一个空目录: 这种情况下只需要在目录下创建.gitkeep文件，然后在项目的.gitignore中设置不忽略.gitkeep。
-
+----------
 mysql中用 <> 与 != 都是可以的，但sqlserver中不识别 != ,所以建议用 <> 。
 mysql truncate table 表名; 清除表的数据。
-
+----------
 #http协议版本
 http1.0：当前浏览器客户端与服务器端建立连接之后，只能发送一次请求，一次请求之后连接关闭。
 http1.1：默认使用长连接，当前浏览器客户端与服务器端建立连接之后，可以在一次连接中发送多次请求。（基本都使用1.1）
-
+----------
 #请求资源
 URL： 统一资源定位符。http://localhost:8080/WebRoot/hello。只能定位互联网资源。是URI 的子集。URL=协议+主机端口+URI
 URI： 统一资源标记符。/WebRoot/hello。用于标记任何资源。可以是本地文件系统、局域网的资源、可以是互联网资源。
-
+----------
 redis zadd(name, key, score): 有序集合，和集合都是成员是唯一的。zrangebyscore(name, min, max): 返回score在min和max之间的key。
 redis hmget(name, keys): 获取给定keys的值，key的顺序对应值顺序。
-
+----------
 Renaming a virtualenv folder without breaking it:
     1. cpvirtualenv oldenv newenv
     2. rmvirtualenv oldenv
-
+----------
 Mac窗口工具: spectacleapp
+----------
+docker cp
+cp Copy files/folders between a container and the local filesystem
+在容器和本地文件系统之间复制文件/文件夹
 
+Usage:  docker cp [OPTIONS] CONTAINER:SRC_PATH DEST_PATH|-
+从容器中复制文件或目录到执行命令所在机器的指定路径
+        docker cp [OPTIONS] SRC_PATH|- CONTAINER:DEST_PATH
+从执行命令所在的机器复制文件或目录到容器内部的指定路径
+|-: 使用复制文件的文件名
+----------
+scp 从本地复制到远程
+    scp local_file remote_username@remote_ip:remote_folder
+从远程复制到本地，只要将从本地复制到远程的命令的后2个参数调换顺序即可
+----------
+mysql 创建数据库名字带-的情况: `dbname`
+----------

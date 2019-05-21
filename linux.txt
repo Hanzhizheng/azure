@@ -15,3 +15,5 @@ In .zshrc alias pmr="python manage.py runserver"
 解压多个卷: 例如 linux.zip.001, linux.zip.002, linux.zip.003。
     1、cat linux.zip* > linux.zip  # 合并为一个zip包。
     2、unzip linux.zip  # 解压zip包。
+ls | tee ./test.log
+    Linux 同时输出所有信息到控制台和文件
