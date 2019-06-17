@@ -810,3 +810,26 @@ swagger use request_serializer and response_serializer:
         else:
             return Response("", status=status.HTTP_400_BAD_REQUEST)
 ----------
+Behaviour django will rollback a transaction, if an exception occurs but that exeption has to be a **DatabaseError** or one of it's subclasses (most notably IntegrityError)
+
+The ObjectDoesNotExist is not a subclass of DatabaseError and as such there is no reason for this transaction to be rolled back.
+----------
+python manage.py test 不迁移数据库
+.. code:: python
+    TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
+    if TESTING:
+        DATABASES['default'] = {
+            'ENGINE': 'django.db.backends.sqlite3',
+        }
+
+        class DisableMigrations(object):
+            def __contains__(self, item):
+                return True
+
+            def __getitem__(self, item):
+                return "notmigrations"
+
+        MIGRATION_MODULES = DisableMigrations()
+----------
+Each request creates a new instance of a view class, handles the request, and destroys it.
+----------

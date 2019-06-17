@@ -17,6 +17,29 @@ git 查看某次commit内容: git show commitID
 当我想从远程仓库里拉取一条本地不存在的分支时：
     git checkout -b 本地分支名 upstream/远程分支名
 这个将会自动创建一个新的本地分支，并与指定的远程分支关联起来。
+
+创建远程分支并把本地分支推到远程分支:
+    git push upstream hotfix:tbox_account_hotfix
+删除远程分支:
+    git push upstream -d tbox_account_hotfix
+
+Git revert到某一个commit:
+
+# Revert to the specific revision using git reset
+::
+    Here we first hard reset the state of the repository to some previous revision and then soft reset back to current state.
+    The soft reset will keep file modifications, so it will bring old state back on top of the current state:
+        # Careful, reset --hard will remove non-commited changes
+        **$ git reset --hard 0682c06**  # Use the SHA1 of the revision you want to revert to
+        HEAD is now at 0682c06 G3
+        **$ git reset --soft HEAD@{1}**
+        **$ git commit -m "Reverting to the state of the project at 0682c06"**
+
+# Revert to the specific revision using git read-tree
+::
+    **git read-tree -um @ 0682c06**  # Use the SHA1 of the revision you want to revert to
+    **git commit -m "Reverting to the state of the project at 0682c06"**
+    The -m option instructs read-tree to merge the specified state and -u will update work tree with the results of the merge.
 ----------
 vscode:
     ctrl+z undo { "key": "cmd+y", "command": "redo", "when": "editorTextFocus" }
@@ -90,4 +113,8 @@ scp 从本地复制到远程
 从远程复制到本地，只要将从本地复制到远程的命令的后2个参数调换顺序即可
 ----------
 mysql 创建数据库名字带-的情况: `dbname`
+----------
+分布式文件系统
+::
+    在信息爆炸时代，单纯通过增加硬盘个数来扩展计算机文件系统的存储容量的方式，在容量大小、容量增长速度、数据备份、数据安全等方面的表现都差强人意。分布式文件系统可以有效解决数据的存储和管理难题：将固定于某个地点的某个文件系统，扩展到任意多个地点/多个文件系统，众多的节点组成一个文件系统网络。每个节点可以分布在不同的地点，通过网络进行节点间的通信和数据传输。人们在使用分布式文件系统时，无需关心数据是存储在哪个节点上、或者是从哪个节点从获取的，只需要像使用本地文件系统一样管理和存储文件系统中的数据。
 ----------

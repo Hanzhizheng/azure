@@ -99,3 +99,20 @@ Here's an example:
         response['Cache-Control'] = 'no-cache'
         response['Pragma'] = 'no-cache'
 ----------
+无内容元素是一种不能包含任何内容的特殊元素。而其他元素，比如 <div>，则既可以不包含任何内容，又可以包含另一个元素或者文字。
+
+比较常见的无内容元素有：
+
+<br> <hr> <img> <input> <link> <meta>
+
+不太常见的无内容元素有：
+
+<area> <base> <col> <command> <embed> <keygen>
+<param> <source> <track> <wbr>
+
+现存所有的无内容元素就是以上这些了。
+
+<br></br> 这样的写法是不合法的 HTML 写法，因为它暗示 br 可以包含内容（但 <br>你好！</br> 是完全没有意义的）。而 <br> 和 <br /> 这两种写法都很常见。
+
+尽管我们都知道 XHTML 强制你必须写成 <br />，但 HTML 里却没有明文规定。
+----------

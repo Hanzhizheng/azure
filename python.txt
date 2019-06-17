@@ -634,3 +634,425 @@ Out[81]: array([2, 3, 4, 5])
 In [79]: np.setdiff1d(aa,bb)
 Out[79]: array([1, 6, 7, 8])
 ----------
+更好的函数命名:
+.. code:: python
+    # Wrong Way
+    def get_user_info(id):
+        db = get_db_connection()
+        user = execute_query_for_user(id)
+        return user
+    # Right way
+    def get_user_by(user_id):
+        db = get_db_connection()
+        user = execute_user_query(user_id)
+        return user
+----------
+Here is a restructured text doc example (the official Python documents recommend this):
+.. code:: python
+    def call_weather_api(url, location):
+        """Get the weather of specific location.
+
+        Calling weather api to check for weather by using weather api
+        and location. Make sure you provide city name only, country and
+        county names won't be accepted and will throw exception if not
+        found the city name.
+
+        :param url:  URL of the api to get weather.
+        :type url: str
+        :param location:  Location of the city to get the weather.
+        :type location: str
+        :return: Give the weather information of given location.
+        :rtype: str
+        """
+        pass
+----------
+Prefer to Have Minimum Code Under try. Whenever you handle an exception in your code, try to keep the code in
+a try block at a minimum.
+----------
+在一些场景中我们经常需要自动生成一些临时文件，当然用简单的open函数，来创建一个隐藏文件可以实现。不过tempfile这个模块把一些有的没的功能全部都封装完毕。我们直接使用即可。
+.. code:: python
+
+    from tempfile import TemporaryFile
+
+    temp = TemporaryFile()
+    print temp  # <open file '<fdopen>', mode 'w+b' at 0x110be7420>
+    print temp.name  # <fdopen>
+    '''
+    TemporaryFile类的构造方法，其返回的还是一个文件对象。但这个文件对象特殊的地方在于
+    1. 对应的文件没有文件名，对除了本程序之外的程序不可见
+    2. 在被关闭的同时被删除
+    所以上面的两句打印语句，输出分别是一个文件对象，以及一个<fdopen>（并不是文件名）
+    '''
+    # 向临时文件中写入内容
+    temp.write('hello\nworld')
+
+    # ...一些操作之后需要读取临时文件的内容了
+    temp.seek(0)     # 从头读取，和一般文件对象不同，seek方法的执行不能少
+    print temp.read()
+
+    temp.close()    # 关闭文件的同时删除文件
+----------
+There are two things that you as a programmer can do before shipping code off (ship off: 遣送) to production to make sure that you are shipping quality code.
+    * Logging
+    * Unit test
+----------
+Class Structure:
+::
+    I prefer a class structure in this order:
+    1. Class variables
+    2. __init__
+    3. Built-in Python special methods (__call__,
+    __repr__, etc.)
+    4. Class methods
+    5. Static methods
+    6. Properties
+    7. Instance methods
+    8. Private methods
+.. code:: python
+
+    class Employee(Person):
+        POSITIONS = ("Superwiser", "Manager", "CEO", "Founder")
+        def __init__(self, name, id, department):
+            self.name = name
+            self.id = id
+            self.department = department
+            self.age = None
+            self._age_last_calculated = None
+            self._recalculated_age()
+        def __str__(self):
+            return ("Name: " + self.name + "\nDepartment: "
+                   + self.department)
+        @classmethod
+        def no_position_allowed(cls, position):
+            return [t for t in cls.POSITIONS if t != position]
+        @staticmethod
+        def c_positions(position):
+            return [t for t in cls.TITLES if t in position]
+        @property
+        def id_with_name(self):
+            return self.id, self.name
+        def age(self):
+            if (datetime.date.today() > self._age_last_recalculated):
+                self.__recalculated_age()
+            return self.age
+        def _recalculated_age(self):
+            today = datetime.date.today()
+            age = today.year - self.birthday.year
+            if today < datetime.date(
+               today.year, self.birthday.month,
+               self.birthday.year):
+                age -= 1
+            self.age = age
+            self._age_last_recalculated = today
+----------
+There are two places you can consider using @property in a class: in complex code hidden behind an attribute and in the validation of the set attribute.
+----------
+Abstract Class the Right Way
+.. code:: python
+    from abc import ABCMeta, abstractmethod
+    class Fruit(metaclass=ABCMeta):
+        @abstractmethod
+        def taste(self):
+            pass
+        @abstractmethod
+        def originated(self):
+            pass
+    class Apple:
+        def originated(self):
+            return "Central Asia"
+----------
+A class method gives you the flexibility to create alternative constructors besides using the __init__ method, so it’s one of the easiest ways to create a factory pattern in Python.
+.. code:: python
+
+    class User:
+        def __init__(self, first_name, last_name):
+            self.first_name = first_name
+            self.last_name = last_name
+
+        @classmethod
+        def using_string(cls, names_str):
+            first, second = map(str, names_str.split(""))
+            student = cls(first, second)
+            return Student
+
+        @classmethod
+        def using_json(cls, obj_json):
+            # parsing json object...
+            return Student
+
+        @classmethod
+        def using_file_obj(cls, file_obj):
+            # parsing file object...
+            return Student
+
+        >>> data = User.using_string("Larry Page")
+        >>> data = User.using_json(json_obj)
+        >>> data = User.using_file_obj(file_obj)
+----------
+# __new__ for Assigning a Value:
+.. code:: python
+
+    class UserAbstract(metaclass=ABCMeta):
+        """Abstract base class template, implementing factory pattern using __new__() initializer."""
+
+        def __new__(cls, *args, **kwargs):
+        """Creates an object instance and sets a base property."""
+            obj = object.__new__(cls)
+            obj.base_property = "Adding Property for each subclass"
+            return obj
+
+    class User(UserAbstract):
+    """Implement UserAbstract class and add its own variable."""
+
+        def __init__(self):
+            self.name = "Larry"
+
+    >>> user = User()
+    >>> user.name
+    Larry
+    >>> user.base_property
+    Adding Property for each subclass
+
+
+# __new__ for Validating the Provided Value:
+.. code:: python
+
+    from abc import abstractmethod, ABCMeta
+
+    class UserAbstract(metaclass=ABCMeta):
+    """Abstract base class template, implementing factory pattern using __new__() initializer."""
+
+        def __new__(cls, *args, **kwargs):
+        """Creates an object instance and sets a base property."""
+            obj = object.__new__(cls)
+            given_data = args[0]
+            # Validating the data here
+            if not isinstance(given_data, str):
+                raise ValueError(f"Please provide string: {given_
+                data}")
+            return obj
+
+    class User(UserAbstract):
+    """Implement UserAbstract class and add its own variable."""
+
+        def __init__(self, name):
+            self.name = Name
+
+    >>> user = User(10)
+    ValueError: Please provide string: 10
+
+----------
+Prevent Creating an Object Directly:
+.. code:: python
+
+    class NoClassInstance:
+    """Create the user object."""
+        def __call__(self, *args, **kwargs):
+            raise TypeError("Can't instantiate directly""")
+
+    class User(metaclass=NoClassInstance):
+        @staticmethod
+        def print_name(name):
+        """print name of the provided value."""
+            print(f"Name: {name}")
+
+    >>> user = User()
+    TypeError: Can't instantiate directly
+    >>> User.print_name("Larry Page")
+    Name: Larry Page
+
+API Design Using __call__
+.. code:: python
+
+    class Calculation:
+        """
+        A wrapper around the different calculation algorithms that
+        allows to perform different action on two numbers.
+        """
+        def __init__(self, operation):
+            self.operation = operation
+
+        def __call__(self, first_number, second_number):
+            if isinstance(first_number, int) and isinstance(second_
+            number, int):
+                return self.operation()
+            raise ValueError("Provide numbers")
+
+    def add(self, first, second):
+        return first + second
+
+    def multiply(self, first, second):
+        return first * second
+
+    >>> add = Calculation(add)
+    >>> print(add(5, 4))
+    9
+    >>> multiply = Calculation(multiply)
+    >>> print(multiply(5, 4))
+    20
+
+Implement Instance Caching Using __call__
+.. code:: python
+
+    class Memo(type):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.__cache = {}
+
+        def __call__(self, id, *args, **kwargs):
+            if id not in self.__cache:
+                self.__cache[id] = super().__call__(id, *args, **kwargs)
+            else:
+                print("Existing Instance")
+            return self.__cache[id]
+
+    class Foo(Memo):
+        def __init__(self, id, *args, **kwargs):
+            self._id = id
+
+    def test():
+        first = Foo("first")
+        second = Foo("first")
+        print(id(first) == id(second))
+
+    >>> test()
+    True
+
+----------
+Class Decorators for Maintaining State and Validating Parameters:
+.. code:: python
+
+    import functools
+    class Count:
+        def __init__(self, func):
+            functools.update_wrapper(self, func)
+            self.func = func
+            self.num = 1
+
+        def __call__(self, *args, **kwargs):
+            self.num += 1
+            print "Number of times called: {}".format(self.num)
+            return self.func(*args, **kwargs)
+
+    @Count
+    def counting_hello():
+        print("Hello")
+
+    >>> counting_hello()
+    Number of times called: 2
+    >>> counting_hello()
+    Number of times called: 3
+
+.. code:: python
+
+    import functools
+    class ValidateParameters:
+        def __init__(self, func):
+            functools.update(self, func)
+            self.func = func
+
+        def __call__(self, *args, **kwargs):
+            if any([isinstance(item, int) for item in parameters]):
+                raise TypeError("Parameter shouldn't be int!!")
+            else:
+                return self.func(*parameters)
+
+    @ValidateParameters
+    def add_numbers(*list_string):
+        return "".join(list_string)
+
+    #  returns anb
+    >>> print(concate("a", "n", "b"))
+    # raises Error.
+    >>> print(concate("a", 1, "c"))
+
+----------
+1、_name 不能用于’from module import *’ 以单下划线开头的表示的是protected类型的变量。即保护类型只能允许其本身与子类进行访问。
+
+2、__name 双下划线的表示的是私有类型的变量。只能是允许这个类本身进行访问了。连也是子类也不可以的。
+----------
+memoryview:
+    1. 内存查看对象(Memory view)的构造函数，返回内存查看对象。
+    2. 所谓内存查看对象，是指对支持缓冲区协议的数据进行包装，在不需要复制对象基础上允许Python代码访问。
+    3. Python内置对象中支持缓冲区协议的对象有bytes和bytearray。
+----------
+任何对象，只要正确实现了上下文管理，就可以用于with语句。实现上下文管理是通过__enter__和__exit__实现的，也可以通过@contextmanager和closing函数实现。
+.. code:: python
+    class closing(object):
+        """Context to automatically close something at the end of a block.
+        Code like this:
+            with closing(<module>.open(<arguments>)) as f:
+                <block>
+        is equivalent to this:
+            f = <module>.open(<arguments>)
+            try:
+                <block>
+            finally:
+                f.close()
+        """
+        def __init__(self, thing):
+            self.thing = thing
+        def __enter__(self):
+            return self.thing
+        def __exit__(self, *exc_info):
+            self.thing.close()
+
+这个contextlib.closing()会帮它加上__enter__()和__exit__()，使其满足with的条件。
+
+.. code:: python
+    from contextlib import contextmanager
+
+    @contextmanager
+    def tag(name):
+        print("<%s>" % name)
+        yield
+        print("</%s>" % name)
+
+    with tag("h1"):
+        print 'hello world!'
+
+yield前半段用来表示__enter__()
+yield后半段用来表示__exit__()
+----------
+ from happybase import Connection
+    c = Connection(...)
+    t = c.table('my_table')
+    count = 0
+    for _ in t.scan(filter='FirstKeyOnlyFilter() AND KeyOnlyFilter()'):
+        count += 1
+
+    print count
+----------
+scan(row_start=None, row_stop=None, row_prefix=None, columns=None, filter=None, timestamp=None, include_timestamp=False, batch_size=1000, scan_batching=None, limit=None, sorted_columns=False)
+
+row_start：起始行，默认None，即第一行，可传入行号指定从哪一行开始
+row_stop：结束行，默认None，即最后一行，可传入行号指定到哪一行结束(不获取此行数据)
+row_prefix：行号前缀，默认为None，即不指定前缀扫描，可传入前缀来扫描符合此前缀的行
+columns：列，默认为None，即获取所有列，可传入一个list或tuple来指定获取列
+filter：过滤字符串
+timestamp：时间戳。默认为None，即返回最大的那个时间戳的数据。可传入一个时间戳来获取小于此时间戳的最大时间戳的版本数据
+include_timestamp：是否返回时间戳数据，默认为False
+batch_size：用于检索结果的批量大小
+scan_batching：服务端扫描批处理
+limit：数量
+sorted_columns：是否返回排序的列(根据行名称排序)
+reverse：是否执行反向扫描
+----------
+itertools.dropwhile(predicate, iterable) 根据真值表舍弃第一个不满足条件前面的值
+>>> x = itertools.dropwhile(lambda e: e < 5, range(10))
+>>> print(list(x))
+[5, 6, 7, 8, 9]
+----------
+If you use Queue.Queue together with multiprocessing. A Queue.Queue will not be shared between processes.
+If the Queue.Queue is declared before the processes then each process will receive a copy of it which is then independent of every other process.
+
+Items placed in the Queue.Queue by the parent before starting the children will be available to each child.
+Items placed in the Queue.Queue by the parent after starting the child will only be available to the parent.
+
+Queue.Queue is made for data interchange (思想、信息等的交换，互换) between different threads inside the same process (using the threading module).
+The multiprocessing queues are for data interchange between different Python processes. While the API looks similar (it's designed to be that way), the underlying mechanisms are fundamentally different.
+
+multiprocessing queues exchange data by pickling (serializing) objects and sending them through pipes.
+Queue.Queue uses a data structure that is shared between threads and locks/mutexes for correct behaviour.
+----------
