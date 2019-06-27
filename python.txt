@@ -1056,3 +1056,10 @@ The multiprocessing queues are for data interchange between different Python pro
 multiprocessing queues exchange data by pickling (serializing) objects and sending them through pipes.
 Queue.Queue uses a data structure that is shared between threads and locks/mutexes for correct behaviour.
 ----------
+Gunicorn (WSGI协议的一个容器，和uWSGI一样的功能)
+----------
+一个对象的弱引用并不足以使得对象存在。当一个对象仅仅剩下弱引用的时候，python的垃圾回收机制会回收销毁这些对象，收回内存。弱引用的一个主要用途就是来实现缓存或者大对象的映射。
+----------
+In [2]: os.pardir
+Out[2]: '..'
+----------

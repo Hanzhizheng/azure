@@ -1,2 +1,234 @@
 ----------
+1、golang的命名需要使用驼峰命名法，且不能出现下划线
+2、golang中根据首字母的大小写来确定可以访问的权限。无论是方法名、常量、变量名还是结构体的名称，如果首字母大写，则可以被其他的包访问；如果首字母小写，则只能在本包中使用。
+----------
 The Println("...") method prints the string "..." and moves the cursor to a new line. The Print("...") method instead prints just the string "...", but does not move the cursor to a new line.
+----------
+在函数中，简洁赋值语句 := 可在类型明确的地方代替 var 声明。
+    package main
+
+    import "fmt"
+
+    func main() {
+        var i, j int = 1, 2
+        k := 3
+        c, python, java := true, false, "no!"
+
+        fmt.Println(i, j, k, c, python, java)
+    }
+
+函数外的每个语句都必须以关键字开始（var, func 等等），因此 := 结构不能在函数外使用。
+----------
+A defer statement pushes a function call onto a list. The list of saved calls is executed after the surrounding function returns. Defer is commonly used to simplify functions that perform various clean-up actions.
+    package main
+
+    import "fmt"
+
+    func main() {
+        fmt.Println("counting")
+
+        for i := 0; i < 10; i++ {
+            defer fmt.Println(i)
+        }
+
+        fmt.Println("done")
+    }
+    >>>
+    counting
+    done
+    9
+    8
+    7
+    6
+    5
+    4
+    3
+    2
+    1
+    0
+----------
+Go 拥有指针。指针保存了值的内存地址。
+
+类型 *T 是指向 T 类型值的指针。其零值为 nil。
+    var p *int
+& 操作符会生成一个指向其操作数的指针。
+    i := 42
+    p = &i
+* 操作符表示指针指向的底层值。
+    fmt.Println(*p) // 通过指针 p 读取 i
+    *p = 21         // 通过指针 p 设置 i
+这也就是通常所说的“间接引用”或“重定向”。
+
+如果我们有一个指向结构体的指针 p，那么可以通过 (*p).X 来访问其字段 X。不过这么写太啰嗦了，所以语言也允许我们使用隐式间接引用，直接写 p.X 就可以。
+    package main
+    import "fmt"
+    type Vertex struct {
+        X int
+        Y int
+    }
+    func main() {
+        v := Vertex{1, 2}
+        p := &v
+        p.X = 1e9
+        fmt.Println(v)
+    }
+----------
+数组
+    var a [2]string
+    a[0] = "Hello"
+    a[1] = "World"
+    fmt.Println(a[0], a[1])
+    fmt.Println(a)
+
+    primes := [6]int{2, 3, 5, 7, 11, 13}
+
+cap()函数返回的是数组切片分配的空间大小
+----------
+二维数组：
+    func main() {
+        // 创建一个井字板（经典游戏）
+        board := [][]string{
+            []string{"_", "_", "_"},
+            []string{"_", "_", "_"},
+            []string{"_", "_", "_"},
+        }
+
+        // 两个玩家轮流打上 X 和 O
+        board[0][0] = "X"
+        board[2][2] = "O"
+        board[1][2] = "X"
+        board[1][0] = "O"
+        board[0][2] = "X"
+
+        for i := 0; i < len(board); i++ {
+            fmt.Printf("%s\n", strings.Join(board[i], " "))
+        }
+    }
+
+    >>>
+        X _ X
+        O _ X
+        _ _ O
+----------
+映射的文法与结构体相似，不过必须有键名：
+    可以通过将键和值的类型传递给内置函数 make 来创建一个 map。语法为：make(map[KeyType]ValueType)。(译者注：map 的类型表示为 map[KeyType]ValueType)，例如：
+    personSalary := make(map[string]int)
+上面的代码创建了一个名为 personSalary 的 map。其中键的类型为 string，值的类型为 int。
+
+修改映射
+在映射 m 中插入或修改元素：
+    m[key] = elem
+获取元素：
+    elem = m[key]
+删除元素：
+    delete(m, key)
+通过双赋值检测某个键是否存在：
+    elem, ok = m[key]
+    若 key 在 m 中，ok 为 true ；否则，ok 为 false。
+    若 key 不在映射中，那么 elem 是该映射元素类型的零值。
+注 ：若 elem 或 ok 还未声明，你可以使用短变量声明：
+    elem, ok := m[key]
+----------
+方法：
+    Go 没有类。不过你可以为结构体类型定义方法。
+    方法就是一类带特殊的 接收者 参数的函数。方法接收者在它自己的参数列表内，位于 func 关键字和方法名之间。
+    在此例中，Abs 方法拥有一个名为 v，类型为 Vertex 的接收者。
+
+    type Vertex struct {
+        X, Y float64
+    }
+
+    func (v Vertex) Abs() float64 {
+        return math.Sqrt(v.X*v.X + v.Y*v.Y)
+    }
+
+    func main() {
+        v := Vertex{3, 4}
+        fmt.Println(v.Abs())
+    }
+----------
+你可以为指针接收者声明方法。
+
+这意味着对于某类型 T，接收者的类型可以用 *T 的文法。（此外，T 不能是像 *int 这样的指针。）
+
+例如，这里为 *Vertex 定义了 Scale 方法。
+
+指针接收者的方法可以修改接收者指向的值（就像 Scale 在这做的）。由于方法经常需要修改它的接收者，指针接收者比值接收者更常用。
+
+试着移除第 16 行 Scale 函数声明中的 *，观察此程序的行为如何变化。  // 5
+
+若使用值接收者，那么 Scale 方法会对原始 Vertex 值的副本进行操作。（对于函数的其它参数也是如此。）Scale 方法必须用指针接受者来更改 main 函数中声明的 Vertex 的值。
+    package main
+
+    import (
+        "fmt"
+        "math"
+    )
+
+    type Vertex struct {
+        X, Y float64
+    }
+
+    func (v Vertex) Abs() float64 {
+        return math.Sqrt(v.X*v.X + v.Y*v.Y)
+    }
+
+    func (v *Vertex) Scale(f float64) {
+        v.X = v.X * f
+        v.Y = v.Y * f
+    }
+
+    func main() {
+        v := Vertex{3, 4}
+        v.Scale(10)
+        fmt.Println(v.Abs())
+    }
+----------
+方法与指针重定向
+比较前两个程序，你大概会注意到带指针参数的函数必须接受一个指针：
+
+var v Vertex
+ScaleFunc(v, 5)  // 编译错误！
+ScaleFunc(&v, 5) // OK
+而以指针为接收者的方法被调用时，接收者既能为值又能为指针：
+
+var v Vertex
+v.Scale(5)  // OK
+p := &v
+p.Scale(10) // OK
+对于语句 v.Scale(5)，即便 v 是个值而非指针，带指针接收者的方法也能被直接调用。 也就是说，由于 Scale 方法有一个指针接收者，为方便起见，Go 会将语句 v.Scale(5) 解释为 (&v).Scale(5)。
+    package main
+
+    import "fmt"
+
+    type Vertex struct {
+        X, Y float64
+    }
+
+    func (v *Vertex) Scale(f float64) {
+        v.X = v.X * f
+        v.Y = v.Y * f
+    }
+
+    func ScaleFunc(v *Vertex, f float64) {
+        v.X = v.X * f
+        v.Y = v.Y * f
+    }
+
+    func main() {
+        v := Vertex{3, 4}
+        v.Scale(2)
+        ScaleFunc(&v, 10)
+
+        p := &Vertex{4, 3}
+        p.Scale(3)
+        ScaleFunc(p, 8)
+
+        fmt.Println(v, p)
+    }
+----------
+使用指针接收者的原因有二：
+
+首先，方法能够修改其接收者指向的值。
+
+其次，这样可以避免在每次调用方法时复制该值。若值的类型为大型结构体时，这样做会更加高效。

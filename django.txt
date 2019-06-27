@@ -833,3 +833,185 @@ python manage.py test 不迁移数据库
 ----------
 Each request creates a new instance of a view class, handles the request, and destroys it.
 ----------
+python manage.py migrate --fake  # 首先对比数据库中的迁移脚本和代码中的迁移脚本。然后找到哪个不同，之后再使用--fake，将代码中的迁移脚本添加到django_migrations表中，但是并不会执行sql语句。这样就可以避免每次执行migrate的时候，都执行一些重复的迁移脚本。
+----------
+uWSGI operates on a client-server model. Your Web server (e.g., nginx, Apache) communicates with a django-uwsgi “worker” process to serve dynamic content.
+----------
+Do not use signals when:
+    1. The signalrelates to one particular model andcanbe moved into one of that model’s methods, possibly called by save().
+    2. The signal can be replaced with a custom model manager method.
+    3. The signal relates to a particular view and can be moved into that view.
+----------
+# Chaining Queriesfor Legibility!
+..coding: python
+    from django.models import Q
+    from promos.models import Promo
+    def fun_function(name=None):
+        """Find working ice cream promo"""
+        qs = (Promo
+                .objects
+                .active()
+                .filter(
+                    Q(name__startswith=name) |
+                    Q(description__icontains=name)
+                )
+                .exclude(status='melted')
+                .select_related('flavors')
+            )
+        return qs
+----------
+WebSocket & EventSource的区别:
+    WebSocket基于TCP协议，EventSource基于http协议。
+    EventSource是单向通信，而websocket是双向通信。
+    EventSource只能发送文本，而websocket支持发送二进制数据。
+    在实现上EventSource比websocket更简单。
+    EventSource有自动重连接（不借助第三方）以及发送随机事件的能力。
+    websocket的资源占用过大EventSource更轻量。
+    websocket可以跨域，EventSource基于http跨域需要服务端设置请求头。
+----------
+给django的migrations瘦身
+当migrations越来越多的时候执行 makemigrations 和 migrate 就会越来越慢，可以考虑减少migrations文件的数量，有两种方法：
+
+    1、squashmigrations(官方推荐)
+        此方法将一个app中的多个migration文件合并为一个，详见 http://doc.bccnsoft.com/docs/django-docs-1.7-en/topics/migrations.html#squashing-migrations
+        python manage.py squashmigrations <appname> <squashfrom> <squashto>
+
+    2、手动删除migrations文件
+        步骤：
+        cd yoursite
+        rm -rf */migrations/*
+        ./manage.py makemigrations appname
+        ./manage.py migrate --fake
+----------
+作为一个选择，如果你仅仅修改类视图中少量简单的属性，你可以直接传递新的属性 到类本身调用 as_view 方法中:
+.. code:: python
+    from django.conf.urls import patterns, url, include
+    from django.views.generic import TemplateView
+    urlpatterns = patterns('',
+        (r'^about/', TemplateView.as_view(template_name="about.html")),)
+----------
+如果你要与某个尚未定义的 model 建立关联 ，就使用 model 的名称，而不是使用 model 对象本身:
+    pub=models.ForeignKey('Publisher')
+
+----------
+把对象转换为字节序列的过程称为对象的序列化。
+把字节序列恢复为对象的过程称为对象的反序列化。
+对象的序列化主要有两种用途：
+　　1） 把对象的字节序列永久地保存到硬盘上，通常存放在一个文件中；
+　　2） 在网络上传送对象的字节序列。
+
+在很多应用中，需要对某些对象进行序列化，让它们离开内存空间，入住物理硬盘，以便长期保存。比如最常见的是Web服务器中的Session对象，当有 10万用户并发访问，就有可能出现10万个Session对象，内存可能吃不消，于是Web容器就会把一些seesion先序列化到硬盘中，等要用了，再把保存在硬盘中的对象还原到内存中。
+----------
+Django中有三种继承关系：
+
+1.通常，你只是想用父 model 来保存那些你不想在子 model 中重复录入的信息。父类是不使用的也就是不生成单独的数据表，这种情况下使用抽象基类继承 Abstract base classes。如果子类没有声明它自己的 Meta 内嵌类，它就会继承父类的 Meta。继承时，Django 会对基类的 Meta 内嵌类做一个调整：在安装 Meta 属性之前，Django 会设置 abstract=False。 这意味着抽象基类的子类不会自动变成抽象类。当然，你可以让一个抽象类继承另一个抽象基类，不过每次都要显式地设置 abstract=True 。
+.. code:: python
+    class CommonInfo(models.Model):
+        name = models.CharField(max_length=100)
+        age = models.PositiveIntegerField()
+
+        class Meta:
+            abstract = True
+
+    class Student(CommonInfo):
+        home_group = models.CharField(max_length=5)
+
+
+2.如果你想从现有的Model继承并让每个Model都有自己的数据表，那么使用多重表继承 Multi-table inheritance。继承关系在子 model 和它的每个父类之间都添加一个链接 (通过一个自动创建的 OneToOneField 来实现)。
+.. code:: python
+    class Place(models.Model):
+        name = models.CharField(max_length=50)
+        address = models.CharField(max_length=80)
+
+    class Restaurant(Place):
+        serves_hot_dogs = models.BooleanField()
+        serves_pizza = models.BooleanField()
+
+    *创建Place实例的同时不会创建Restaurant，但是创建Restaurant实例的同时会创建Place实例*
+
+3.最后，如果你只想在 model 中修改 Python-level 级的行为，而不涉及字段改变。比如，更改默认的manager，或是添加一个新方法，代理模式适用于这种场合。一个 proxy models 不会在数据库中创建新的表、而是与它的基类共用同一个表。
+.. code:: python
+    class Person(models.Model):
+        first_name = models.CharField(max_length=30)
+        last_name = models.CharField(max_length=30)
+
+    class MyPerson(Person):
+        class Meta:
+            proxy = True
+
+        def do_something(self):
+            pass
+    如果你没有在代理 model 中定义任何 manager ，代理 model 就会从父类中继承 manager 。如果你在代理 model 中定义了一个 manager ，它就会变成默认的 manager ，不过定义在父类中的 manager 仍是有效的。
+----------
+django-sse:
+.. code:: python
+    from sse import Sse
+    from django.http import StreamingHttpResponse
+
+    class AlertNotificationSseView(views.APIView):
+    """
+    This is a base class for sse streaming.
+    """
+    redis_conn = get_redis_pool()
+
+    def get_last_id(self):
+        if "HTTP_LAST_EVENT_ID" in self.request.META:
+            return self.request.META['HTTP_LAST_EVENT_ID']
+        return None
+
+    def _iterator(self):
+        for subiterator in self.iterator():
+            for bufferitem in self.sse:
+                yield bufferitem
+
+    def dispatch(self, request, *args, **kwargs):
+        self.sse = Sse()
+
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+
+        response = StreamingHttpResponse(self._iterator(), content_type="text/event-stream")
+        response['Cache-Control'] = 'no-cache'
+        response['Software'] = 'django-sse'
+        return response
+
+    def iterator(self):
+        """
+        This is a source of stream.
+        Must use ``yield`` statement to flush
+        content from sse object to the client.
+        Example:
+        def iterator(self):
+            counter = 0
+            while True:
+                self.sse.add_message('foo', 'bar')
+                self.sse.add_message('bar', 'foo')
+                yield
+        """
+        while True:
+            request_time = common_utils.get_now()
+            query_type = self.request.GET.get('query_type', '')
+            if query_type == 'new_alert':
+                new_alert_time = self.redis_conn.get('new_alert_notification')
+                if new_alert_time:
+                    new_alert_time = common_utils.parse_datetime(new_alert_time)
+                    if new_alert_time > request_time - datetime.timedelta(seconds=5):
+                        self.sse.add_message("data", "true")
+                        yield
+                        time.sleep(5)
+                self.sse.add_message("data", "false")
+                yield
+                time.sleep(5)
+            elif query_type == 'continued_alert':
+                continued_alert_time = self.redis_conn.get('continued_alert_notification')
+                if continued_alert_time:
+                    continued_alert_time = common_utils.parse_datetime(continued_alert_time)
+                    if continued_alert_time > request_time - datetime.timedelta(seconds=30):
+                        self.sse.add_message("data", "true")
+                        yield
+                        time.sleep(30)
+                self.sse.add_message("data", "false")
+                yield
+                time.sleep(30)
+----------
