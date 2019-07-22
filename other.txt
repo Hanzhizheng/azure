@@ -22,7 +22,7 @@ git commit规范:
         feat[特性]: 新增feature
         fix[修复]: 修复bug
         docs[文档]: 仅仅修改了文档，比如README, CHANGELOG, CONTRIBUTE等等
-        style[格式]: 仅仅修改了空格、格式缩进、都好等等，不改变代码逻辑
+        style[格式]: 仅仅修改了空格、格式缩进、逗号等等，不改变代码逻辑
         refactor[重构]: 代码重构，没有加新功能或者修复bug
         perf[优化]: 优化相关，比如提升性能、体验
         test[测试]: 测试用例，包括单元测试、集成测试等
@@ -152,4 +152,31 @@ mysql 创建数据库名字带-的情况: `dbname`
 分布式文件系统
 ::
     在信息爆炸时代，单纯通过增加硬盘个数来扩展计算机文件系统的存储容量的方式，在容量大小、容量增长速度、数据备份、数据安全等方面的表现都差强人意。分布式文件系统可以有效解决数据的存储和管理难题：将固定于某个地点的某个文件系统，扩展到任意多个地点/多个文件系统，众多的节点组成一个文件系统网络。每个节点可以分布在不同的地点，通过网络进行节点间的通信和数据传输。人们在使用分布式文件系统时，无需关心数据是存储在哪个节点上、或者是从哪个节点从获取的，只需要像使用本地文件系统一样管理和存储文件系统中的数据。
+----------
+export WORKON_HOME=$HOME/.virtualenvs
+source /usr/local/bin/virtualenvwrapper.sh
+export PYTHONPATH=.
+export PATH=$PATH:$(go env GOPATH)/bin
+export GOPATH=$(go env GOPATH)
+alias pmma="python manage.py makemigrations"
+alias pmm="python manage.py migrate"
+alias pmr="python manage.py runserver"
+alias pms="python manage.py shell_plus"
+alias cf="cd ~/b/Dfjk4Finance"
+alias cn="cd ~/b/Dfjk4NewEnergy"
+alias cj="cd ~/b/Jing5Web"
+alias cg="cd ~/b/Guo6Web"
+alias cz="cd ~/b/Zheng6Web"
+alias cb="cd ~/b/Burnish6Web"
+read temp
+case $temp in
+  b|dfjk)
+    workon $temp
+  ;;
+  '')
+    workon dfjk
+  ;;
+esac
+----------
+提高性能最怕是没有方向，没有头绪的时候不妨试试三件套：并行、异步、加缓存。
 ----------

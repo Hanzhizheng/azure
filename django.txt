@@ -7,8 +7,8 @@ serializer = self.get_serializer(data=request.data)
 serializer.is_valid(raise_exception=True)
 ifile = serializer.validated_data['ifile']
 workbook = xlrd.open_workbook(filename=None, file_contents=ifile.read())
-
-理解aggregate的关键在于理解SQL中的聚合函数：以下摘自百度百科：SQL基本函数，聚合函数对一组值执行计算，并返回单个值。除了COUNT以外，聚合函数都会忽略空值。常见的聚合函数有AVG/COUNT/MAX/MIN/SUM等
+----------
+理解aggregate的关键在于理解SQL中的聚合函数：以下摘自百度百科：SQL基本函数，聚合函数对一组值执行计算，并**返回单个值**。除了COUNT以外，聚合函数都会忽略空值。常见的聚合函数有AVG/COUNT/MAX/MIN/SUM等
 >>> from django.db.models import Count
 >>> pubs = Publisher.objects.aggregate(num_books=Count('book'))
 >>> pubs
@@ -843,7 +843,7 @@ Do not use signals when:
     3. The signal relates to a particular view and can be moved into that view.
 ----------
 # Chaining Queriesfor Legibility!
-..coding: python
+.. coding: python
     from django.models import Q
     from promos.models import Promo
     def fun_function(name=None):
@@ -1014,4 +1014,237 @@ django-sse:
                 self.sse.add_message("data", "false")
                 yield
                 time.sleep(30)
+----------
+PostgreSQL is the default database for Django. There are features in Django that only work for PostgreSQL
+PostgreSQL is much better at handling database migrations than MySQL. It's really nice when for large tables things don't get locked for hours
+----------
+Annotating a Max, Min, Sum results in None rather than zero:
+.. code:: python
+    from django.db.models.functions import Coalesce
+    queryset = queryset.filter(**truckdailystatistics_filter).annotate(
+        search_mileage=Coalesce(Max(temp) - Min(temp), 0)
+    )
+----------
+How to serialize queryset in get method in Django Rest Framework?
+
+1. Since you are passing a QuerySet object, you must not provide the **data** argument.
+
+2. QuerySet is a list like object, so you should provide many=True while serialization.
+
+3. the is_valid() method only is applicable(适用的) only if you pass a dictionary to the data argument.
+
+.. code:: python
+    queryset = Truck.objects.filter()
+    serializer = TruckSerializer(queryset, many=True)
+    data = serializer.data
+----------
+queryset.values_list('id', flat=True)
+>>> [1L, 2L,3L,...]
+json.dumps(queryset.values_list('id',flat=True))
+>>> *** TypeError: [1L, 2L,3L,...] is not JSON serializable
+json.dumps(list(queryset.values_list('id',flat=True)))
+>>> [1, 2, 3,...]
+----------
+django 升级到2.0之后, 表与表之间关联的时候, 必须要写on_delete参数, 否则会报异常:
+    TypeError: __init__() missing 1 required positional argument: 'on_delete'
+.. code:: python
+    #级联删除情况
+    class UserToken(models):                             #级联删除，用户删除，它也删除
+        user = models.OneToOneField(to='User', on_delete=models.CASCADE, to_field='id')
+        token = models.CharField(max_length=128, null=True)
+
+    #置空情况
+    class Server(models.Model):
+        server_type_choice = (
+            (1, "WEB"),
+            (2, "存储"),
+            (3, "缓存")
+        )
+        server_type = models.IntegerField(choices=server_type_choice)
+        hostname = models.CharField(max_length=32)
+        port = models.IntegerField()
+        business_unit = models.ForeignKey("BusinessUnit", on_delete= models.SET_NULL, null=True)
+
+    #设置默认值
+        user = models.ForeignKey("UserInfo", on_delete= models.SET_DEFAULT, default=0)
+多对多 (ManyToManyField) 没有 on_delete 参数
+----------
+django change project name:
+    Your django project structure
+    ProjectName/
+             manage.py
+             ProjectName/
+                     __init__.py
+                     settings.py
+                     urls.py
+                     wsgi.py
+    Rename your project directory (ProjectName) and the following inside your project directory.
+        settings.py
+            ROOT_URLCONF = 'NewProjectName.urls'
+            WSGI_APPLICATION = 'NewProjectName.wsgi.application'
+
+        wsgi.py
+            os.environ.setdefault("DJANGO_SETTINGS_MODULE", "NewProjectName.settings")
+
+        manage.py
+            os.environ.setdefault("DJANGO_SETTINGS_MODULE", "NewProjectName.settings")
+----------
+django 2.2 with restframework close csrf
+.. code:: python
+
+    # example.py
+    from rest_framework.authentication import SessionAuthentication
+
+    class CsrfExemptSessionAuthentication(SessionAuthentication):
+        def enforce_csrf(self, request):
+            return  # To not perform the csrf check previously happening
+
+    # in settings.py
+    REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+            'example.CsrfExemptSessionAuthentication',  # 字符串引用，不能使用直接导入的方式
+            'rest_framework.authentication.BasicAuthentication',
+        ),
+        ...
+    }
+----------
+.. coding:: python
+    class PlatformDailyStatisticsViewSet(
+        mixins.ListModelMixin,
+        mixins.RetrieveModelMixin,
+        viewsets.GenericViewSet,
+    ):
+        queryset = models.PlatformDailyStatistics.objects.filter(
+            statistic_date__range=[datetime.datetime.now() - datetime.timedelta(days=30), datetime.datetime.now()]
+        )
+        serializer_class = PlatformDailyStatisticsSerializer
+        ordering = ('-statistic_date',)
+    **queryset 这种filter动态过滤没效果，datetime.datetime.now 在k8s得到的是构建pod时的时间**
+----------
+Serializer vs Renderer:
+    A serializer doesn't know anything about any output formats. It just takes your models and converts then into python data structures It's then the job of the renderer to output that data in the appropriate format.
+----------
+drf-yasg
+
+1. 隐藏
+    Set **swagger_schema = None** class level or set **auto_schema=None** one method to hide it in swagger。
+.. coding:: python
+    from django.utils.decorators import method_decorator
+    from drf_yasg.utils import swagger_auto_schema
+    class UserList(APIView):
+       swagger_schema = None
+
+       # all methods of the UserList class will be excluded
+       ...
+
+    # only the GET method will be shown in Swagger
+    @swagger_auto_schema(method='put', auto_schema=None)
+    @swagger_auto_schema(methods=['get'], ...)
+    @api_view(['GET', 'PUT'])
+    def user_detail(request, pk):
+       pass
+
+2. 覆盖
+    You can use the **@swagger_auto_schema** decorator on view functions to override some properties of the generated Operation.
+    Operation: Information about an API operation (path + http method combination):
+        Parameters:
+            operation_id (str) – operation ID, should be unique across all operations
+            # |GET| /truck/map/ 地图范围类车辆位置接口 << operation_id
+            responses (Responses) – responses returned
+            parameters (list[Parameter]) – parameters accepted
+            consumes (list[str]) – content types accepted
+            produces (list[str]) – content types produced
+            summary (str) – operation summary; should be < 120 characters
+            description (str) – operation description; can be of any length and supports markdown
+            tags (list[str]) – operation tags
+            security (list[dict[str,list[str]]]) – list of security requirements
+
+.. coding:: python
+
+    # for **APIView, GenericAPIView and non-ViewSet**:
+    class UserList(APIView):
+       @swagger_auto_schema(responses={200: UserSerializer(many=True)})
+       def get(self, request):
+          ...
+
+       @swagger_auto_schema(operation_description="description")
+       def post(self, request):
+          ...
+
+    # for **ViewSet, GenericViewSet, ModelViewSet**:
+    class ArticleViewSet(viewsets.ModelViewSet):
+        @swagger_auto_schema(operation_description='GET /articles/today/')
+        @action(detail=False, methods=['get'])
+        def today(self, request):
+            ...
+
+        @swagger_auto_schema(method='get', operation_description="GET /articles/{id}/image/")
+        @swagger_auto_schema(method='post', operation_description="POST /articles/{id}/image/")
+        @action(detail=True, methods=['get', 'post'], parser_classes=(MultiPartParser,))
+        def image(self, request, id=None):
+            ...
+
+        @swagger_auto_schema(operation_description="PUT /articles/{id}/")
+        def update(self, request, *args, **kwargs):
+            ...
+
+        @swagger_auto_schema(operation_description="PATCH /articles/{id}/")
+        def partial_update(self, request, *args, **kwargs):
+            ...
+
+    # If you want to customize the generation of a **method you are not implementing yourself**:
+
+    from django.utils.decorators import method_decorator
+    from drf_yasg.utils import swagger_auto_schema
+
+    @method_decorator(name='list', decorator=swagger_auto_schema(
+        operation_description="description from swagger_auto_schema via method_decorator"
+    ))
+    class ArticleViewSet(viewsets.ModelViewSet):
+       ...
+
+3. Support for SerializerMethodField
+
+.. coding:: python
+
+    # The swagger_serializer_method decorator for the use case where the serializer method is using a serializer. e.g.:
+
+    from drf_yasg.utils import swagger_serializer_method
+
+    class OtherStuffSerializer(serializers.Serializer):
+        foo = serializers.CharField()
+
+    class ParentSerializer(serializers.Serializer):
+        other_stuff = serializers.SerializerMethodField()
+
+        @swagger_serializer_method(serializer_or_field=OtherStuffSerializer)
+        def get_other_stuff(self, obj):
+            return OtherStuffSerializer().data
+    #Note that the serializer_or_field parameter can accept either a subclass or an instance of serializers.Field.
+
+    # For simple cases where the method is returning one of the supported types:
+
+    class SomeSerializer(serializers.Serializer):
+        some_number = serializers.SerializerMethodField()
+
+        @swagger_serializer_method(serializer_or_field=serializers.FloatField)
+        def get_some_number(self, obj):
+            return 1.0
+----------
+自定义jwt认证成功返回数据
+.. codeing:: python
+
+    def jwt_response_payload_handler(token, user=None, request=None):
+        return {
+            'token': token,
+            'user_id': user.id,
+            'username': user.username
+        }
+
+    # in settings.py:
+    JWT_AUTH = {
+    'JWT_RESPONSE_PAYLOAD_HANDLER': jwt_response_payload_handler,
+    ...
+    }
 ----------

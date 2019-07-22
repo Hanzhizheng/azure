@@ -1,0 +1,28 @@
+----------
+# Add a method to a class instance at runtime
+.. codeing:: python
+    import string
+    import new
+
+    def __str__(self):
+        classStr = ''
+        for name, value in self.__class__.__dict__.items() + self.__dict__.items():
+            classStr += string.ljust(name, 15) + '\t' + str(value) + '\n'
+        return classStr
+
+    def addStr(anInstance):
+        anInstance.__str__ = new.instancemethod(__str__, anInstance, anInstance.__class__)
+        # python3 anInstance.__str__ = types.MethodType(__str__, anInstance)
+
+    # Test it
+
+    class TestClass:
+        classSig = 'My Sig'
+        def __init__(self, a=1):
+            self.a = a
+
+    test = TestClass()
+    addStr(test)
+    print test
+----------
+# Add a method to a class instance at runtime

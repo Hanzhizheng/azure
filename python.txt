@@ -1063,3 +1063,130 @@ Gunicorn (WSGI协议的一个容器，和uWSGI一样的功能)
 In [2]: os.pardir
 Out[2]: '..'
 ----------
+yield from:
+.. codeing:: python
+    # 考虑我们有多个 generator 并想把 generator 组合起来，如：
+
+    def odds(n):
+        for i in range(n):
+            if i % 2 == 1:
+                yield i
+
+    def evens(n):
+        for i in range(n):
+            if i % 2 == 0:
+                yield i
+
+    def odd_even(n):
+        for x in odds(n):
+            yield x
+        for x in evens(n):
+            yield x
+
+    for x in odd_even(6):
+        print(x)  # => 1, 3, 5, 0, 2, 4
+
+    # for x in generator(): yield x 这种写法不太方便，因此 PEP 380 引入了 yield from 语法，上面的例子可以改成：
+    def odd_even(n):
+        yield from odds(n)
+        yield from evens(n)
+----------
+协程可以在执行期间暂停，这样就可以等待外部的处理（例如IO）完成之后，从之前暂停的地方恢复执行。
+生成器是迭代器，会生成传给 yield 关键字的表达式的值。
+yield表示协程在此暂停，并且将执行权交给其他协程。因为协程可以将值与控制权一起传递给另一个协程，所以“yield一个值”就表示将值传给下一个执行的协程。
+事件循环: 在Asyncio模块中，**每一个进程都有一个事件循环**。
+什么是事件循环
+    在计算系统中，可以产生事件的实体叫做事件源，能处理事件的实体叫做事件处理者。此外，还有一些第三方实体叫做事件循环。它的作用是管理所有的事件，在整个程序运行过程中不断循环执行，追踪事件发生的顺序将它们放到队列中，当主线程空闲的时候，调用相应的事件处理者处理事件。最后，我们可以通过下面的伪代码来理解事件循环:
+    while (1) {
+        events = getEvents();
+        for (e in events)
+            processEvent(e);
+    }
+所有的事件都在 while 循环中捕捉，然后经过事件处理者处理。事件处理的部分是系统唯一活跃的部分，当一个事件处理完成，流程继续处理下一个事件。
+    loop = get_event_loop(): 得到当前上下文的事件循环。
+    loop.call_later(time_delay, callback, argument): 延后 time_delay 秒再执行 callback 方法。
+    loop.call_soon(callback, argument): 尽可能快调用 callback, call_soon() 函数结束，主线程回到事件循环之后就会马上调用 callback 。
+    loop.time(): 以float类型返回当前时间循环的内部时间。
+    asyncio.set_event_loop(): 为当前上下文设置事件循环。
+    asyncio.new_event_loop(): 根据此策略创建一个新的时间循环并返回。
+    loop.run_forever(): 在调用 stop() 之前将一直运行。
+
+asyncio 是用来编写并发代码的库，使用 async/await 语法。
+async/await实际上只是 @asyncio.coroutine和yield from 的语法糖：
+    把 @asyncio.coroutine 替换为 async
+    把 yield from 替换为 await  # yield from iterable 等于 for item in iterable: yield item 的缩写版
+
+    @asyncio.coroutine用来标记基于生成器的协程的装饰器。基于生成器的协程是使用 yield from 语句创建的 Python 生成器，可以等待 Future 和其他协程。
+    此装饰器使得旧式的基于生成器的协程能与 async/await 代码相兼容:
+    @asyncio.coroutine
+    def old_style_coroutine():
+        yield from asyncio.sleep(1)
+
+    async def main():
+        await old_style_coroutine()
+
+    此装饰器 已弃用 并计划觉得 Python 3.10 中移除。
+    此装饰器不应该被用于 async def 协程。
+
+coro 缩写 Coroutines
+Coroutine 是协程。
+可等待 对象有三种主要类型: 协程, 任务 和 Future.
+Future 是一种特殊的 低层级 可等待对象，表示一个异步操作的 最终结果。
+Future 包裹了协程，为协程添加了回调模式，可以指定结果成功和失败时的回调函数。
+当一个 Future 对象 被等待，这意味着协程将保持等待直到该 Future 对象在其他地方操作完毕。
+
+Task 对协程对象在事件循环的执行负责。如果一个协程在等待一个 Future 对象，Task 对象会挂起该协程的执行并等待该 Future 对象完成。当该 Future 对象 完成，被打包的协程将恢复执行。当一个任务在等待future执行的期间，事件循环会运行一个新的任务。
+
+Asyncio是用来处理事件循环中的异步进程和并发任务执行的。它还提供了 asyncio.Task() 类，可以在任务中使用协程。**Task的作用是，在同一事件循环中,运行某一个任务的同时可以并发地运行多个任务**。当协程被包在任务中，它会自动将任务和事件循环连接起来，当事件循环启动的时候，任务自动运行。这样就提供了一个可以自动驱动协程的机制。
+
+事件循环使用协同日程调度: 一个事件循环每次运行一个 Task 对象。而一个 Task 对象会等待一个 Future 对象完成，该事件循环会运行其他 Task、回调或执行 IO 操作。
+----------
+线程同步机制中，下面的对象可以使用 with 语法：
+    Lock
+    RLock
+    Condition
+    Semaphore
+----------
+queue.task_done 主要是给queue.join用的，每次get后需要调用task_done，直到所有任务都task_done。join才取消阻塞。
+queue.join:
+    Blocks until all items in the Queue have been gotten and processed.
+    The count of unfinished tasks goes up whenever an item is added to the
+    queue. The count goes down whenever a consumer thread calls **task_done()**
+    to indicate the item was retrieved and all work on it is complete.
+
+.. code:: python
+    class consumer(Thread):
+        def __init__(self, queue):
+            Thread.__init__(self)
+            self.queue = queue
+
+        def run(self):
+            while True:
+                item = self.queue.get()
+                print('Consumer notify : %d popped from queue by %s' % (item, self.name))
+                self.queue.task_done()
+----------
+Multiprocessing库有两个Communication Channel可以交换对象：队列(queue)和管道（pipe）。
+----------
+read 读取整个文件，输出为字符串，readlines 读取整个文件，输出为列表。
+----------
+.. coding:: python
+    # Python program to demonstrate ternary operator
+    a, b = 10, 20
+
+    # Use tuple for selecting an item
+    print( (b, a) [a < b] )
+
+    # Use Dictionary for selecting an item
+    print({True: a, False: b} [a < b])
+
+    # lamda is more efficient than above two methods
+    # because in lambda we are assure that only one
+    # expression will be evaluated unlike in tuple and Dictionary
+    print((lambda: b, lambda: a)[a < b]())
+
+    >>> Output:
+    10
+    10
+    10
+----------
