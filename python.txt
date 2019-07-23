@@ -1140,6 +1140,10 @@ Task 对协程对象在事件循环的执行负责。如果一个协程在等待
 Asyncio是用来处理事件循环中的异步进程和并发任务执行的。它还提供了 asyncio.Task() 类，可以在任务中使用协程。**Task的作用是，在同一事件循环中,运行某一个任务的同时可以并发地运行多个任务**。当协程被包在任务中，它会自动将任务和事件循环连接起来，当事件循环启动的时候，任务自动运行。这样就提供了一个可以自动驱动协程的机制。
 
 事件循环使用协同日程调度: 一个事件循环每次运行一个 Task 对象。而一个 Task 对象会等待一个 Future 对象完成，该事件循环会运行其他 Task、回调或执行 IO 操作。
+
+协程的行为有点像函数调用，它和函数调用的不同在于，对于函数调用来说，假如A函数调用B函数，则必须等待B函数执行完毕之后程序运行流程才会重新走回A，但是对于协程来说，如果在协程A中切到协程B，协程B可以选择某个点重新回到A的执行流，同时允许在某个时刻重新从A回到B之前回到A的那个点，这在函数中是不可能实现的。因为函数只能一走到底。
+
+因为子例程只返回一次，要返回多个值就要通过集合的形式。这在有些语言，如Forth里很方便；而其他语言，如C，只允许单一的返回值，所以就需要引用一个集合。相反地，因为协程可以返回多次，返回多个值只需要在后继的协程调用中返回附加的值即可。在后继调用中返回附加值的协程常被称为产生器。
 ----------
 线程同步机制中，下面的对象可以使用 with 语法：
     Lock
@@ -1189,4 +1193,73 @@ read 读取整个文件，输出为字符串，readlines 读取整个文件，�
     10
     10
     10
+----------
+python中getpass的作用是输入密码不可见:
+.. coding:: python
+    import getpass
+    password = getpass.getpass('Input password: ')
+    print password
+----------
+判断一个对象的属性是否存在，若不存在就添加该属性:
+    getattr(t, "age", setattr(t, "age", "18"))
+----------
+python2 urllib模块urlretrieve方法: 将远程数据下载到本地
+urllib.urlretrieve(url, filename=None, reporthook=None, data=None, context=None)
+    url：外部或者本地url。
+    filename：保存到本地的路径，如果未指定，urllib会生成一个临时文件来保存数据。
+    reporthook：回调函数，当连接上服务器、以及相应的数据块传输完毕的时候会触发该回调。我们可以利用这个回调函数来显示当前的下载进度。
+    data：指post到服务器的数据。该方法返回一个包含两个元素的元组(filename, headers)，filename表示保存到本地的路径，header表示服务器的响应头。
+.. coding:: python
+    import os
+    import urllib
+    def cbk(a, b, c):
+    '''回调函数
+    @a:已经下载的数据块
+    @b:数据块的大小
+    @c:远程文件的大小
+    '''
+        per = 100.0 * float(a * b) / float(c)
+        if per > 100:
+            per = 100
+        print("a", a)
+        print("b", b)
+        print("c", c)
+        print('{:.2f}%'.format(per))
+
+    url='https://www.cnblogs.com'
+    dir=os.path.abspath('.')
+    work_path=os.path.join(dir, 'cnblogs.html')
+    urllib.urlretrieve(url, work_path, cbk)
+----------
+Python标准库提供了易用的上下文管理器工具模块contextlib，它是通过生成器实现的，我们不需要创建类以及__enter__和__exit__这两个特殊的方法:
+.. coding:: python
+    from contextlib import contextmanager
+
+    @contextmanager
+    def make_open_context(filename, mode):
+        fp = open(filename, mode)
+        try:
+            yield fp
+        finally:
+            fp.close()
+
+    with make_open_context('/tmp/a.txt', 'a') as file_obj:
+        file_obj.write("hello world")
+
+在上文中，yield关键词把上下文分割成两部分：yield之前就是__init__中的代码块；yield之后其实就是__exit__中的代码块，yield生成的值会绑定到with语句as子句中的变量，例如在上面的例子中，yield生成的值是文件句柄对象fp，在下面的with语句中，会将fp和file_obj绑定到一起，也就是说file_obj此时就是一个文件句柄对象，那么它就可以操作文件了，因此就可以调用file_obj.write("hello world")，另外要注意的是**如果yield没有生成值，那么在with语句中就不需要写as子句了**:
+.. coding:: python
+    from contextlib import contextmanager
+
+    @contextmanager
+    def book_mark():
+        print('《', end="")
+        yield
+        print('》', end="")
+
+    with book_mark():
+        print('且将生活一饮而尽', end="")
+    >>> 《且将生活一饮而尽》
+----------
+dir()函数会自动寻找一个对象的所有属性，包括__dict__中的属性。
+__dict__是dir()的子集，dir()包含__dict__中的属性。
 ----------

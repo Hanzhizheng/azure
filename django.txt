@@ -1248,3 +1248,137 @@ drf-yasg
     ...
     }
 ----------
+auto_now和auto_now_add被设置为True后，会导致字段成为editable=False和blank=True的状态。editable=False将导致字段不会被呈现在admin中，blank=Ture表示允许在表单中不输入值。此时，如果在admin的fields或fieldset中强行加入该日期时间字段，那么程序会报错，admin无法打开；如果在admin中修改对象时，想要看到日期和时间，可以将日期时间字段添加到admin类的**readonly_fields**中：
+.. codeing:: python
+    class YourAdmin(admin.ModelAdmin):
+        readonly_fields = ('save_date', 'mod_date',)
+    admin.site.register(Tag, YourAdmin)
+
+实际场景中，往往既希望在对象的创建时间默认被设置为当前值，又希望能在日后修改它。怎么实现这种需求呢？设置默认值:
+.. coding:: python
+    from django.db import models
+    import django.utils.timezone as timezone
+    class Doc(models.Model):
+        add_date = models.DateTimeField('保存日期', default = timezone.now)
+        mod_date = models.DateTimeField('最后修改日期', auto_now = True)
+----------
+使用Django时要通知Django当前使用的是哪个配置文件。可以改变环境变量 **DJANGO_SETTINGS_MODULE** 实现这一点。
+----------
+is_active: 指示用户的账号是否激活。我们建议把这个标记设置为False 来代替删除账号；这样的话，如果你的应用和User 之间有外键关联，外键就不会失效。
+----------
+Django自定义404页面，如下5个步骤：
+    1 使用自定义的404页面，必须在setting文件修改DEBUG = False(即关闭debug调试模式)
+    2 必须在setting文件修改ALLOWED_HOSTS = ['*']或者ALLOWED_HOSTS = ['127.0.0.1', 'localhost'']，否则启动项目会提示：
+      CommandError: You must set settings.ALLOWED_HOSTS if DEBUG is False.
+    3 在urls文件中，添加如下代码：
+      from django.conf.urls import handler404, handler500
+      handler404 = sign_views.page_not_found   #handler404 = "你的app.views.函数名"
+    4 在views文件中添加page_not_found函数
+      def page_not_found(request):
+          return render_to_response("404.html")
+    5 在app的templates下建立404.html
+----------
+from django.utils.decorators import method_decorator
+在CBV中，可以使用method_decorator来装饰方法。如果有多个装饰器装饰一个方法，可以写成一个list。
+----------
+You can get str of any queryset.query to get the sql:
+.. coding:: python
+    >>> queryset = models.Province.objects.all()
+    >>> str(queryset.query)
+    'SELECT `owl_province`.`id`, `owl_province`.`name`, `owl_province`.`div_code`, `owl_province`.`short_name` FROM `owl_province`'
+----------
+Django >= 1.11
+
+How to do union of two querysets from same or different models?
+.. coding:: python
+    >>> q1 = User.objects.filter(id__gte=5)
+    >>> q1
+    <QuerySet [<User: Ritesh>, <User: Billy>, <User: Radha>, <User: sohan>, <User: Raghu>, <User: rishab>]>
+    >>> q2 = User.objects.filter(id__lte=9)
+    >>> q2
+    <QuerySet [<User: yash>, <User: John>, <User: Ricky>, <User: sharukh>, <User: Ritesh>, <User: Billy>, <User: Radha>, <User: sohan>, <User: Raghu>]>
+    >>> q1.union(q2)
+    <QuerySet [<User: yash>, <User: John>, <User: Ricky>, <User: sharukh>, <User: Ritesh>, <User: Billy>, <User: Radha>, <User: sohan>, <User: Raghu>, <User: rishab>]>
+----------
+Django >= 1.11
+
+How to do a subquery expression in Django?
+.. coding:: python
+    您可以使用Subquery表达式向QuerySet添加显式子查询。
+    例如，要使用该帖子最新评论的作者的电子邮件地址来注释每篇文章:
+    >>> from django.db.models import OuterRef, Subquery
+    >>> newest = Comment.objects.filter(post=OuterRef('pk')).order_by('-created_at')
+    >>> Post.objects.annotate(newest_commenter_email=Subquery(newest.values('email')[:1]))
+
+*Exists* is a Subquery subclass that uses an SQL EXISTS statement. In many cases it will perform better than a subquery since the database is able to stop evaluation of the subquery when a first matching row is found.
+For example, to annotate each post with whether or not it has a comment from within the last day:
+    >>> one_day_ago = timezone.now() - timedelta(days=1)
+    >>> recent_comments = Comment.objects.filter(
+    ...     post=OuterRef('pk'),
+    ...     created_at__gte=one_day_ago,
+    ... )
+    >>> Post.objects.annotate(recent_comment=Exists(recent_comments))
+----------
+How to copy or clone an existing model object?
+.. coding:: python
+    # If an instance is saved with instance’s pk set to None, the instance is used to create a new record in the DB. That means every field other than the PK is copied.
+
+    In [2]: Hero.objects.all().count()
+    Out[2]: 4
+
+    In [3]: hero = Hero.objects.first()
+
+    In [4]: hero.pk = None
+
+    In [5]: hero.save()
+
+    In [6]: Hero.objects.all().count()
+    Out[6]: 5
+----------
+How to ensure that only one object can be created?
+.. coding:: python
+
+    class Origin(models.Model):
+        name = models.CharField(max_length=100)
+
+        def save(self, *args, **kwargs):
+            if self.__class__.objects.count():
+                self.pk = self.__class__.objects.first().pk
+            super().save(*args, **kwargs)
+    # We overrode the save method, and set the pk to an existing value. This ensures that when create is called and any object exists, an IntegrityError is raised. IntegrityError: (1062, "Duplicate entry '1' for key 'PRIMARY'")
+----------
+How to convert existing databases to Django models?
+.. coding:: python
+    $ python manage.py inspectdb
+    $ python manage.py inspectdb > models.py
+Move that file to the correct app and you have a good starting point for further customizations.
+----------
+python manage.py dbshell: 进入数据库命令行
+----------
+有些情况下，Django的查询语法难以简单的表达复杂的 WHERE 子句，对于这种情况, Django提供了 extra() 修改机制，它能在QuerySet生成的SQL从句中注入新子句:
+    extra(select=None, where=None, params=None, tables=None, order_by=None, select_params=None)
+
+e.g:
+.. coding:: python
+    # select
+    Entry.objects.extra(select={'is_recent': "pub_date > '2006-01-01'"})
+
+    SELECT blog_entry.*, (pub_date > '2006-01-01') AS is_recent FROM blog_entry;
+
+    # where 接受字符串列表，列表每一项之间是“与”的联合关系。
+    Entry.objects.extra(where=["foo='a' OR bar = 'a'", "baz = 'a'"])
+
+    SELECT * FROM blog_entry WHERE (foo='a' OR bar='a') AND (baz='a');
+
+    # select_params
+    Blog.objects.extra(
+        select=OrderedDict([('a', '%s'), ('b', '%s')]),
+        select_params=('one', 'two'),
+    )
+
+    # params
+    Entry.objects.extra(
+        where=['headline=%s'],
+        params=['Lennon'],
+    )
+----------
