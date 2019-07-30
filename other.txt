@@ -180,3 +180,10 @@ esac
 ----------
 提高性能最怕是没有方向，没有头绪的时候不妨试试三件套：并行、异步、加缓存。
 ----------
+A Redis server, by default, is configured with 16 (0..15) shared databases.
+----------
+在物理上 HBase 是按 column family 存储的，只是按照 Row-key 将相关 CF 中的列关联起来。
+----------
+1. 通过设置StartRow和StopRow替换PrefixFilter
+2. 当SingleColumnValueFilter设置filterIfMissing为true时，和其他Filter组合成FilterList时，可能导致返回结果不正确。不要使用SingleColumnValueFilter和其他Filter组合成FilterList。尽量通过ValueFilter来替换掉SingleColumnValueFilter。
+----------

@@ -1382,3 +1382,125 @@ e.g:
         params=['Lennon'],
     )
 ----------
+DRF自带的token验证的不足:
+DRF的token存在数据库中，如果是分布式系统或者两套系统，想要使用同一套验证系统就会出现问题，因为数据是放在一台服务器上。
+没有过期时间，是长期有效，如果泄露，就会存在安全隐患。
+----------
+django newer version custom middleware:
+.. coding:: python
+    class SimpleMiddleware(object):
+        def __init__(self, get_response):
+            self.get_response = get_response
+            # One-time configuration and initialization.
+
+        def __call__(self, request):
+            # Code to be executed for each request before
+            # the view (and later middleware) are called.
+
+            response = self.get_response(request)
+
+            # Code to be executed for each request/response after
+            # the view is called.
+
+            return response
+----------
+In the latest DRF, you need to explicitly set *base_name* in your viewset url if you don't have queryset defined.
+So, something like this should do good:
+    router.register(r'my-model/', MyModelView, basename='MyModel')
+----------
+FloatField uses Python’s float type internally, while DecimalField uses Python’s Decimal type.
+Always use DecimalField for money.
+----------
+django settings: DATETIME_FORMAT = 'Y-m-d H:i:s'
+----------
+django change admin search_fields placeholder:
+1. Add truck/static/js/xxx.js:
+    window.onload = function() {
+        document.getElementById("searchbar").placeholder = "search by vin";
+    };
+
+2. python manage.py collectstatic
+
+3. in admin.py:
+    class TruckAdmin(admin.ModelAdmin):
+        ...
+        class Media:
+            js = ('js/xxx.js',)
+----------
+When you specify field names, you must provide an order_by() in the QuerySet, and the fields in order_by() must start with the fields in distinct(), in the same order.
+----------
+Why is "blank" is missing in django.forms.CharField, but present in django.db.models.CharField?
+In Django, blank=True in models correlates to required=False in forms.
+    forms.CharField(...,required = False)
+----------
+if you want to make a field optional, use either **default=SOMETHING, blank=True, null=False** or **blank=True, null=True**.
+----------
+django restframework serializer 增加自定义字段
++ 方法一
+  - 首先，在django的model中定义property。
+.. coding:: python
+    class Animal(models.Model):
+        ...
+        @property
+        def country_area(self):
+            return self.country.area
+
+  - 然后在定义django restframework的serializer时，使用字段的source参数指向我们上面定义好的property。
+    class AnimalSerializer(serializers.Serializer):
+        ...
+        country_area = serializers.FloatField(required=False, source='country_area’)
++ 方法二
+  - 不修改django的model，直接使用SerializerMethodField(method_name=None)字段。
+----------
+Django : How can I find a list of models that the ORM knows?
+Simple solution:
+    import django.apps
+    **django.apps.apps.get_models()**
+
+By default apps.get_models() don't include:
+    - auto-created models for many-to-many relations without an explicit intermediate table
+    - models that have been swapped out.
+
+If you want to include these as well:
+    django.apps.apps.get_models(include_auto_created=True, include_swapped=True)
+
+Prior to Django 1.7, instead use:
+    from django.db import models
+    models.get_models(include_auto_created=True)
+The include_auto_created parameter ensures that through tables implicitly created by ManyToManyFields will be retrieved as well.
+----------
+判断instance有哪些外键:
+.. coding:: python
+    In [14]: City._meta.fields
+    Out[14]:
+    (<django.db.models.fields.AutoField: id>,
+     <django.db.models.fields.CharField: name>,
+     <django.db.models.fields.CharField: short_name>,
+     <django.db.models.fields.CharField: div_code>,
+     <django.db.models.fields.related.ForeignKey: province>,
+     <django.db.models.fields.FloatField: lat>,
+     <django.db.models.fields.FloatField: lng>,
+     <django.db.models.fields.BooleanField: enabled>)
+
+    In [15]: City._meta.fields[4]
+    Out[15]: <django.db.models.fields.related.ForeignKey: province>
+
+    In [16]: City._meta.fields[4].get_internal_type()
+    Out[16]: 'ForeignKey'
+
+    for field in City._meta.fields:
+        if field.get_internal_type() == 'ForeignKey':
+            print 'found a foreign key'
+
+related_objects 获得该model是谁的外键:
+    In [20]: Province._meta.related_objects
+    Out[20]: (<ManyToOneRel: owl.city>,)
+
+    for related_object in instance._meta.related_objects:
+        model = related_object.related_model  # owl.models.config_models.City
+        field_name = related_object.field.name  # 'province'
+        params = {field_name: instance}
+        for one in model.objects.filter(**params):  # 代码将 instance 这个省的所有 city 的省外键设成 None。
+            one.field_name = None
+            one.save()
+----------

@@ -1263,3 +1263,15 @@ Python标准库提供了易用的上下文管理器工具模块contextlib，它�
 dir()函数会自动寻找一个对象的所有属性，包括__dict__中的属性。
 __dict__是dir()的子集，dir()包含__dict__中的属性。
 ----------
+Celery Flower:
+    Flower does not process tasks. You must run both, then Flower can be used as a monitoring tool.
+    Run celery:
+        celery -A tasks worker --loglevel=info
+    Open another shell and run flower:
+        celery -A tasks flower --loglevel=info
+----------
+Testing the installation
+Verify that the packages are installed correctly:
+.. coding:: python
+    (envname) $ python -c 'import happybase'  # **python -c**
+----------
