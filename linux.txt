@@ -17,3 +17,9 @@ In .zshrc alias pmr="python manage.py runserver"
     2、unzip linux.zip  # 解压zip包。
 ls | tee ./test.log
     Linux 同时输出所有信息到控制台和文件
+----------
+在Linux使用grep命令，从文件中抓取显示特定的信息，如下:
+    cat 文件名 | grep 特定条件 --->   cat xxxx | grep 12345
+结果报错：Binary file (standard input) matches；经过查询后，意思为文件是二进制文件，不能直接grep，解决办法:
+    cat 文件名 | grep -a 特定条件 ---> cat xxxx | grep -an 12345  # -n,--line-number 输出的同时显示行号
+----------

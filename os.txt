@@ -1,5 +1,7 @@
 Memories are made up of registers. Each register in the memory is one storage location. Storage location is also called as memory location. Memory locations are identified using Address. The total number of bit a memory can store is its capacity.
 ----------
+所谓临界区（critical regions）就是访问和操作共享数据的代码段。多个内核任务并发访问同一个资源通常是不安全的，编程者必须保证临界区代码被原子地执行。也就是说，代码在执行期间不可被打断，就如同整个临界区是一个不可分割的指令一样。如果两个内核任务处于同一个临界区中，这就是一种错误现象。如果这种情况确实发生了，我们就称它是**竞争状态**。注意竞争状态是小概率事件，因为竞争引起的错误有时出现，有时并不出现，所以调试这种错误会非常困难。**避免并发和防止竞争状态则称为同步**（synchronization）。
+
 临界资源: 多道程序系统中存在许多进程，它们共享各种资源，然而有很多资源一次只能供一个进程使用，一次仅允许一个进程使用的资源称为临界资源。属于临界资源的硬件有打印机、磁带机等，软件有消息缓冲队列、变量、数组、缓冲区等。诸进程间应采取互斥方式，实现对这种资源的共享。
 临界区(Critical Section): 每个进程中访问临界资源的那段代码称为临界区。显然，若能保证诸进程互斥地进入自己的临界区，便可实现诸进程对临界资源的互斥访问。
 Critical section is a code segment that can be accessed by only one process at a time.
@@ -97,4 +99,53 @@ What's the difference between SIGSTOP and SIGTSTP?
 
 文件（File）
 简单地说，文件就是存放在持久存储介质（比如硬盘、光盘、U盘等）上，方便应用程序和用户读写的数据。当处理器需要访问文件中的数据时，可通过操作系统把它们装入内存。放在硬盘上的程序也是一种文件。文件管理的任务是有效地支持文件的存储、检索和修改等操作。
+----------
+栈：存放的是局部变量（在方法和语句块内部定义的变量）：当方法和语句块一结束，空间马上释放
+堆：存放的是成员变量（也叫属性，在方法外，在类里，定义的变量）：随着对象而产生，随对象销毁而销毁。
+数据段：存放的是类变量（也叫静态变量，和成员变量相比多加上关键字static）：长驻内存，创建好以后，不会消失
+代码段：是存放了程序代码的数据：在代码段中，也有可能包含一些只读的常数变量，列如字符串常量等
+----------
+字符character/char的宽度由字符集规定，比如
+ASCII字符集的字符是8bit，
+GBK字符集的字符可以是1或2个字节，8或16bit
+UNICODE字符集的utf-8字符可以是1,2,3,4,5,6个字节，即8,16,24,32,40,48bit
+常见的简体汉字可以是GBK,UTF8编码
+GBK每个汉字字符2个字节，16bit
+UTF-8每个汉字字符3个字节，24bit
+----------
+什么是句柄？为什么会有句柄？
+从广义上，能够从一个数值拎起一大堆数据的东西都可以叫做句柄。句柄的英文是"Handle"，本义就是"柄"，只是在计算机科学中，被特别地翻译成"句柄"，其实还是个"柄"。从一个小东西拎起一大堆东西，这难道不像是个"柄"吗？
+Windows系统中有许多内核对象，比如打开的文件，创建的线程，程序的窗口，等等。这些重要的对象肯定不是4个字节或者8个字节足以完全描述的，他们拥有大量的属性。为了保存这样一个"对象"的状态，往往需要上百甚至上千字节的内存空间，那么怎么在程序间或程序内部的子过程（函数）之间传递这些数据呢？拖着这成百上千的字节拷贝来拷贝去吗？显然会浪费效率。那么怎么办？当然传递这些对象的首地址是一个办法，但这至少有两个缺点：
+    暴露了内核对象本身，使得程序（而不是操作系统内核）也可以任意地修改对象地内部状态（首地址都知道了，还有什么不能改的？），这显然是操作系统内核所不允许的；
+    操作系统有定期整理内存的责任，如果一些内存整理过一次后，对象被搬走了怎么办？
+所以，Windows操作系统就采用进一步的间接（可以理解为进一步的抽象的过程）：在进程的地址空间中设一张表，表里头专门保存一些编号和由这个编号对应一个地址，而由那个地址去引用实际的对象，这个编号跟那个地址在数值上没有任何规律性的联系，纯粹是个映射而已。 在Windows系统中，这个编号就叫做"句柄"。
+
+Handle本身是一个32位的无符号整数，作为一个索引在一个表中查找对应的内核对象的实际地址。那么这个表在哪里呢？每个进程都有这样的一个表，叫句柄表。该表的第一项就是进程自己的句柄，这也是为什么你调用GetCurrentProcess()总是返回0x7FFFFFFF原因。
+
+简单地说，Handle就是一种用来"间接"代表一个内核对象的整数值。你可以在程序中使用handle来代表你想要操作的内核对象。这里的内核对象包括：事件（Event）、线程、进程、Mutex等等。我们最常见的就是文件句柄（file handle）。
+----------
+Intelx86系列微机共支持256种向量中断，为使处理器较容易地识别每种中断源，将它们从0到256编号，即赋以一个中断类型码n，Intel把这个8位的无符号整数叫做一个向量，因此，也叫**中断向量**。**所有256种中断可分为两大类：异常和中断**。异常又分为故障（Fault）和陷阱(Trap)，它们的共同特点是既不使用中断控制器，又不能被屏蔽（异常其实是CPU发出的中断信号）。中断又分为外部可屏蔽中断（INTR）和外部非屏蔽中断（NMI），所有I/O设备产生的中断请求（IRQ）均引起屏蔽中断，而紧急的事件（如硬件故障）引起的故障产生非屏蔽中断。
+----------
+什么数据需要加锁呢？大多数内核数据结构都需要加锁！有一条很好的经验可以帮助我们判断：如果有其它内核任务可以访问这些数据，那么就给这些数据加上某种形式的锁；如果任何其它东西能看到它，那么就要锁住它。
+----------
+在编写代码的开始阶段就设计恰当的锁是一种基本原则.
+----------
+分页机制在段机制之后进行，以完成线性——物理地址的转换过程。段机制把虚拟地址转换为线性地址，分页机制进一步把该线性地址再转换为物理地址。
+----------
+同步机制的要求
+主要
+    1. 相互排斥
+        我们的解决方案必须提供相互排斥。通过相互排斥，如果一个进程在临界区内执行，那么另一个进程不能进入临界区。
+    2. 进程
+        进程意味着如果一个进程不需要执行到临界区，那么它不应该阻止其他进程进入临界区。
+次要
+    1. 有界等待
+        我们应该能够预测每个流程进入临界区的等待时间。 这个进程不能无休止地等待进入临界区。
+    2. 架构中立
+        我们的机制必须是架构中立的。 这意味着如果解决方案在一个架构上运行良好，那么它也应该在其他架构上运行。
+----------
+As a program runs, the memory addresses that it uses to reference its data is the logical address. The real time translation to the physical address is performed in hardware by the **CPU’s Memory Management Unit** (MMU). The MMU has two special registers that are accessed by the CPU’s control unit. A data to be sent to main memory or retrieved from memory is stored in the Memory Data Register (**MDR**). The desired logical memory address is stored in the Memory Address Register (**MAR**). The address translation is also called address binding and uses a memory map that is programmed by the operating system.
+----------
+The **Virtual Memory Management system** maintains **a copy of the memory for per program** on secondary storage, such as a hard drive. With a virtual memory management system, the logical address space becomes a virtual address space that uses the full range of memory addresses for each process (0 to 4 GB for a 32 bit system).
+----------
 ----------

@@ -1504,3 +1504,47 @@ related_objects 获得该model是谁的外键:
             one.field_name = None
             one.save()
 ----------
+什么是同源:
+  - 协议相同：比如http://
+  - 域名相同：比如“www.test.com”
+  - 端口相同：比如同为8000（默认端口80可以省略）
+同时满足满足以上三个条件的才可以被称为同源。
+----------
+STATIC_ROOT 是在部署的时候才发挥作用, 而实际情况下,静态文件的一般安放位置有两种:
+
+1.一种就是在每个app里面新建一个static文件夹,将静态文件放到里面,在加载静态文件时,比如要在模板中用到静态文件,django会自动在每个
+app里面搜索static文件夹(所以,不要把文件夹的名字写错哦, 否则django就找不到你的文件夹了)
+
+2.另一种,就是在所有的app文件外面,建立一个公共的文件夹, 因为有些静态文件不是某个app独有的,那么就可以把它放到一个公共文件夹里面,
+方便管理(注意,建立一个公共的静态文件的文件夹只是一种易于管理的做法,但是不是必须的,app是可以跨app应用静态文件的,因为最后所有的静
+态文件都会在STATIC_ROOT里面存在)
+那现在的问题是如何让django知道你把一些静态文件放到app以外的公共文件夹中呢,那就需要配置STATICFILES_DIRS了
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'common_static'),
+)
+
+STATICFILES_DIRS告诉django,首先到STATICFILES_DIRS里面寻找静态文件,其次再到各个app的static文件夹里面找。
+----------
+How to get Request.User in Django-Rest-Framework serializer?
+    user =  self.context['request'].user
+----------
+DatabaseError: server closed the connection unexpectedly:
+.. coding:: python
+    def reset_database_connection():
+        from django import db
+        db.close_connection()
+Django is smart enough to re-initialize the connection the next time it's used.
+----------
+Django and Pypy
+Running Django on PyPy boils down (归根结底) to **installing both and running Django with pypy instead of python**.
+
+Download a PyPy binary from http://pypy.org/download.html and follow the install instructions there.
+
+Run Django the usual way with PyPy:
+    pypy ./manage.py syncdb
+    pypy ./manage.py runserver
+PyPy runs the templating engine faster than CPython, but so far DB access is slower for some drivers.
+Some C-based DB drivers don't work with PyPy. See the Compatibility Wiki for an overview of what works.
+https://code.djangoproject.com/wiki/DjangoAndPyPy
+----------

@@ -1275,3 +1275,97 @@ Verify that the packages are installed correctly:
 .. coding:: python
     (envname) $ python -c 'import happybase'  # **python -c**
 ----------
+python traceback捕获并打印异常
+.. coding:: python
+    try:
+        1/0
+    except Exception, e:
+        print e
+输出结果: integer division or modulo by zero, 只知道是报了错，却不知道在哪个文件哪个函数哪一行报的错。
+
+使用traceback:
+    try:
+        1/0
+    except Exception, e:
+        traceback.print_exc()
+输出结果:
+Traceback (most recent call last):
+    File "test_traceback.py", line 3, in <module>
+        1/0
+ZeroDivisionError: integer division or modulo by zero
+
+format_exc()返回字符串，print_exc()则直接给打印出来。即traceback.print_exc()与print traceback.format_exc()效果是一样的。
+print_exc()还可以接受file参数直接写入到一个文件。比如 traceback.print_exc(file=open('tb.txt','w+')) 写入到tb.txt文件去。
+----------
+ord是unicode ordinal的缩写，chr是character的缩写，ord和chr是互相对应转换的，但是由于chr局限于ascii,长度只有256，于是又多了个unichr。
+.. coding:: python
+    >>> c = u'康'
+    >>> c
+        u'\u5eb7'
+    >>> ord(c)
+        24747
+    >>> chr(24247)
+        ValueError: chr() arg not in range(256)
+    >>> unichr(24247)
+        u'\u5eb7'
+----------
+1. 同一个引用
+.. coding:: python
+    >>> a = range(3)
+    >>> a
+        [0, 1, 2]
+    >>> b = a
+    >>> b
+        [0, 1, 2]
+    >>> b[0]='kzc'
+    >>> b
+        ['kzc', 1, 2]
+    >>> a
+        ['kzc', 1, 2]
+可以看到，改变b时，a也跟着变了。这是因为赋值的是引用。其实a和b指向同一个对象。
+可以用b = a[:]或者b = a+[]解决。
+上面的解决方法是浅拷贝的，如果列表a比较复杂，比如列表里面嵌套列表，就需要深拷贝才能彻底解决了。
+即利用copy模块，b = copy.deepcopy(a)。
+顺带，字典也是引用。
+
+2. 遍历的时候改变值
+    >>> arr = ['a','b','c','kzc']
+    >>> for i in arr:
+    ...:    if i!='kzc':
+    ...:        arr.remove(i)
+    ...:
+    >>> arr
+        ['b', 'kzc']
+
+为什么结果会是这个呢，我可是要把不等于'kzc'的元素删了的。这是因为遍历的跟删除的是同一个引用，同一个对象。
+一开始，遍历到第一个元素'a','a'不满足被删掉，arr列表就变成了['b','c','kzc']了，然后i继续往下遍历到第二个元素，注意，这时候arr列表被改变了，
+第二个元素成了'c'了，于是'b'就漏掉了。
+
+3. 由于存到redis数据库中的都是字符串，有时候取出来的时候忘记转成整型，造成损失。有一次操作玩家的数值的时候，本来是要加32*3即96的，结果成了'32'*3即'323232'了。
+----------
+逻辑运算符短路逻辑:
+    1. 从左至右运算，若 or 的左侧逻辑值为 True ，则短路 or 后所有的表达式（不管是 and 还是 or），直接输出 or 左侧表达式 。
+    2. 从左至右运算，若 and 的左侧逻辑值为 False ，则短路其后所有 and 表达式，直到有 or 出现，输出 and 左侧表达式到 or 的左侧，参与接下来的逻辑运算。
+    3. r 的左侧为 False ，或者 and 的左侧为 True 则不能使用短路逻辑。
+
+三元运算操作符: bool ? a : b ，若 bool 为真则 a ，否则为 b 。
+----------
+带 __slots__ 属性的类定义不会存在__dict__ 了（除非你在 __slots__ 中增加 __dict__ 元素）。
+----------
+In [5]: data=np.array([i for i in range(10)])
+
+In [6]: np.array_split(data, 3)
+Out[6]: [array([0, 1, 2, 3]), array([4, 5, 6]), array([7, 8, 9])]
+----------
+if io_bound:
+    if io_very_slow:
+        print("Use Asyncio")
+    else:
+       print("Use Threads")
+else:
+    print("Multi Processing")
+
+CPU Bound => Multi Processing
+I/O Bound, Fast I/O, Limited Number of Connections => Multi Threading
+I/O Bound, Slow I/O, Many connections => Asyncio
+----------
