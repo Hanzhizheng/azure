@@ -1369,3 +1369,169 @@ CPU Bound => Multi Processing
 I/O Bound, Fast I/O, Limited Number of Connections => Multi Threading
 I/O Bound, Slow I/O, Many connections => Asyncio
 ----------
+* Use a def for named expressions:
+.. coding:: python
+    Yes:
+        def f(x): return 2*x
+    No:
+        f = lambda x: 2*x
+
+* Insert a break statement into the loop
+    If the for loop iterates to completion without being prematurely interrupted by a break or return statement, then Python executes the else clause of the loop. If the else clause should not always execute at the end of a loop clause, then the code should add a break statement within the loop block:
+.. coding:: python
+    def contains_magic_number(list, magic_number):
+        for i in list:
+            if i == magic_number:
+                print("This list contains the magic number.")
+                # added break statement here
+                break
+        else:
+            print("This list does NOT contain the magic number.")
+
+    contains_magic_number(range(10), 5)
+    # This list contains the magic number.
+
+* A contextmanager class is any class that implements the __enter__ and __exit__ methods, __exit__ must accept 3 arguments: type, value, traceback
+
+* __init__ is automatically called when memory is allocated for a new object.
+
+* Use a sentinel value to denote an empty list or dictionary, When the function receives the sentinel value, it knows that it is supposed to return a new list or dict.
+.. coding:: python
+    def append(number, number_list=[]):
+        number_list.append(number)
+        print(number_list)
+        return number_list
+
+    append(5) # expecting: [5], actual: [5]
+    append(7) # expecting: [7], actual: [5, 7]
+    append(2) # expecting: [2], actual: [5, 7, 2]
+
+    # the keyword None is the sentinel value representing empty list
+    def append(number, number_list=None):
+        if number_list is None:
+            number_list = []
+        number_list.append(number)
+        print(number_list)
+        return number_list
+
+    append(5) # expecting: [5], actual: [5]
+    append(7) # expecting: [7], actual: [7]
+    append(2) # expecting: [2], actual: [2]
+
+* Use setdefault() to initialize a dictionary:
+.. coding:: python
+    dictionary = {}
+    if "a" not in dictionary:
+        dictionary["a"] = []
+    dictionary["a"].append("item")
+
+    dictionary = {}
+    dictionary.setdefault("a", []).append("item")
+    # When setdefault() is called, it will check if the key already exists. If it does exist, then setdefault() does nothing. If the key does not exist, then setdefault() creates it and sets it to the value specified in the second argument.
+
+* The Python community uses an EAFP (easier to ask for forgiveness than permission) coding style.
+.. coding:: python
+    import os
+    # violates EAFP coding style
+    if os.path.exists("file.txt"):
+        os.unlink("file.txt")  # os.unlink()方法用于删除文件,如果文件是一个目录则返回一个错误。
+
+    import os
+    try:
+        os.unlink("file.txt")
+    # raised when file does not exist
+    except OSError:
+        pass
+
+* Compare values to None using the pattern if cond is None.
+
+* Use named tuples to return multiple values
+
+* Use zip() to iterate through a pair of lists
+
+* Use a set or dictionary instead of a list to check if key is contained or not. Python can attempt to directly access the target number in the set, rather than iterate through every item in the list and compare every item to the target number.
+.. coding:: python
+    l = [1, 2, 3, 4]
+    # iterates over three elements in the list
+    if 3 in l:
+        print("The number 3 is in the list.")
+    else:
+        print("The number 3 is NOT in the list.")
+
+    s = set([1, 2, 3, 4])
+    if 3 in s:
+        print("The number 3 is in the list.")
+    else:
+        print("The number 3 is NOT in the list.")
+----------
+**WSGI** allowed developers to separate choice of a Web framework from choice of a Web server. Now you can actually mix and match Web servers and Web frameworks and choose a pairing that suits your needs. You can run Django, Flask, or Pyramid, for example, with Gunicorn or Nginx/uWSGI or Waitress.
+**WSGI Server 流程**:
+    First, the server starts and loads an ‘application’ callable provided by your Web framework/application
+    Then, the server reads a request
+    Then, the server parses it
+    Then, it builds an ‘environ’ dictionary using the request data
+    Then, it calls the ‘application’ callable with the ‘environ’ dictionary and a ‘start_response’ callable as parameters and gets back a response body.
+    Then, the server constructs an HTTP response using the data returned by the call to the ‘application’ object and the status and response headers set by the ‘start_response’ callable.
+    And finally, the server transmits the HTTP response back to the client
+----------
+os._exit(n)
+    退出进程，并且返回退出状态n，在退出的时候不会执行清理工作，直接退出。
+    注意：正常的退出应该使用sys.exit(n)，而_exit()函数一般只用在fork之后的子进程中调用以退出。
+
+os.wait()
+    pid, status = os.wait()
+    进程一旦调用了wait，就立即阻塞自己，由wait自动分析是否当前进程的某个子进程已经退出，如果让它找到了这样一个已经变成僵尸的子进程，wait就会收集这个子进程的信息，并把它彻底销毁后返回；如果没有找到这样一个子进程，wait就会一直阻塞在这里，等待任何一个子进程结束。
+
+os.waitpid(pid, options)
+    os.wait 遇到任何一个子进程结束就返回，如果同时多个子进程结束，依然会导致僵尸进程出现。
+    本质上讲，系统调用waitpid和wait的作用是完全相同的，但waitpid多出了两个可由用户控制的参数pid和options，从而为我们编程提供了另一种更灵活的方式。
+        pid>0时，只等待进程ID等于pid的子进程，不管其它已经有多少子进程运行结束退出了，只要指定的子进程还没有结束,waitpid就会一直等下去。
+        pid=-1时，等待任何一个子进程退出，没有任何限制，此时waitpid和wait的作用一模一样。
+        pid=0时，等待同一个进程组中的任何子进程，如果子进程已经加入了别的进程组，waitpid不会对它做任何理睬。
+        pid<-1时，等待一个指定进程组中的任何子进程，这个进程组的ID等于pid的绝对值。
+    options 提供了一些额外的选项来控制waitpid
+        如果使用了WNOHANG参数调用waitpid，即使没有子进程结束，它也会立即返回，不会像wait那样永远等下去。如果设置了 WNOHANG 且没有子进程退出的话，pid, status = os.wait() pid = 0。
+----------
+signal包的核心是使用signal.signal()函数来预设(register)信号处理函数，如下所示：
+    singnal.signal(signalnum, handler)  signalnum为某个信号，handler为该信号的处理函数。
+        当handler为signal.SIG_IGN时，信号被无视(ignore)。
+        当handler为singal.SIG_DFL，进程采取默认操作(default)。
+        当handler为一个函数名时，进程采取函数中定义的操作。该函数必须接受两个参数，分别是信号量signum，当前程序运行堆栈frame，这两个参数Python解释器会自动传入，因此我们不必显示传入。
+    signal.pause()
+        使程序阻塞，直到程序接收到某个信号量。如果没有这句话，可以在程序中变更为
+            while True:
+                pass
+        效果一样
+    signal.alarm(n)
+        隔n秒后发出一个SIGALRM信号
+        若注册了ALRM信号的处理函数，则相关处理器会被调用。当time为0时，取消注册ALRM信号处理函数。
+
+.. coding:: python
+    import signal
+    import time
+
+    def handler(signum, frame):
+        if signum == signal.SIGALRM:
+            print('时间到了')
+        elif signum == signal.SIGINT:
+            print("CTRL + C 无效")
+
+    signal.alarm(5)  # 触发SIGALRM信号
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGALRM, handler)
+
+    while True:
+        print('Waiting....')
+        time.sleep(2)
+
+    Waiting....
+    Waiting....
+    Waiting....
+    时间到了
+    Waiting....
+    ^CCTRL + C 无效
+    Waiting....
+    Waiting....
+    Waiting....
+    ...
+----------

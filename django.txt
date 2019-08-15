@@ -830,6 +830,7 @@ python manage.py test 不迁移数据库
                 return "notmigrations"
 
         MIGRATION_MODULES = DisableMigrations()
+In Django 1.9+, you should simply use None instead of a fake module name like 'notmigrations'
 ----------
 Each request creates a new instance of a view class, handles the request, and destroys it.
 ----------
@@ -1547,4 +1548,66 @@ Run Django the usual way with PyPy:
 PyPy runs the templating engine faster than CPython, but so far DB access is slower for some drivers.
 Some C-based DB drivers don't work with PyPy. See the Compatibility Wiki for an overview of what works.
 https://code.djangoproject.com/wiki/DjangoAndPyPy
+----------
+drf .force_authenticate(user=None, token=None)
+Sometimes you may want to bypass authentication entirely and force all requests by the test client to be automatically treated as authenticated.
+
+This can be a useful shortcut if you're testing the API but don't want to have to construct valid authentication credentials in order to make test requests.
+
+.. coding:: python
+    from rest_framework.test import force_authenticate
+    user = User.objects.get(username='lauren')
+    client = APIClient()
+    client.force_authenticate(user=user)
+----------
+RequestFactory vs Client:
+
+RequestFactory and Client have some very different use-cases. To put it in a single sentence: RequestFactory returns a request, while Client returns a response.
+
+The RequestFactory does what it says - it's a factory to create request objects. Nothing more, nothing less. However, instead of behaving like a browser, the RequestFactory provides a way to generate a request instance that can be used as the first argument to any view. This means you can test a view function the same way as you would test any other function.
+
+The Client is used to fake a complete request-response cycle.
+
+>>> response = c.get('/xxx/xxx/')
+>>> response.content
+运行上述测试用例都不需要Webserver处于运行状态。实际上，上述代码避免了和HTTP和与Django框架交互的开销
+----------
+Cookie主要运用于一下三个方面：
+1、会话状态管理，如用户登录状态、购物车、游戏分数或其他需要记录的信息；
+
+2、个性化设置，如用户自定义设置、主题等；
+
+3、浏览器行为跟踪。
+
+
+Session
+
+1、诞生背景
+      其实设计Cookie之初，它并不是仅仅保存了一个key值，而是直接保存用户的信息，但是由于cookie是存在客户端的，而且本身存储的尺寸大小也是有限的，最关键的是用户是可见的，并且可以随意地修改，这相当地不安全。为了既安全又方便的读取全局信息，于是诞生了Session这种新的存储会话机制。
+
+2、什么是Session
+      Session翻译为会话，服务器为每个浏览器创建一个会话对象，浏览器在第一次请求服务器时，服务器便会为该浏览器生成一个Seesion对象，保存在服务端，并且把Session的Id以cookie的形式发送给客户端浏览器，最终以用户显示结束或session超时为结束。
+
+Session工作原理：
+1.当某个用户向服务器发送第一个请求时，服务器为其建立一个sesion，并为此session创建一个标识号(sessionID)；
+
+2.这个用户随后的所有请求都应包括这个标识号(sessionID)，服务器会校对这个标识号以判断请求是属于哪个session的；
+
+3.sessionID标识号有两种实现方式：Cookie和URL重写；
+
+4.Cookie是将数据直接保存在客户端，而Session是将数据保存在服务端，所以Session的安全性更佳。
+----------
+When setting up logging, always set **disable_existing_loggers** to **False**.
+----------
+* Make sure, an appropriate host is set in ALLOWED_HOSTS, whenever DEBUG = False.
+
+* Instead of publishing your secret key, you should do this.
+.. coding:: python
+    # Load key from environment variable
+    import os
+    SECRET_KEY = os.environ['SECRET_KEY']
+
+    # Load secret key from file
+    with open('/etc/secret_key.txt') as f:
+        SECRET_KEY = f.read().strip()
 ----------
