@@ -41,6 +41,14 @@ git commit规范:
     优化: 首页图片加载缓慢优化
     重构: 对头像功能进行封装重构
 ----------
+git 切换分支
+    1、首先切换到dev分支上
+        git checkout dev
+    2、如果是多人开发的话 需要把远程dev上的代码pull下来
+        git pull upstream dev
+    3、然后我们把some_branch分支的代码合并到dev上
+        git merge some_branch
+
 git diff HEAD HEAD~1: 查看上一次提交的改动
 git push origin -d somebranch 删除远程分支
 
@@ -50,13 +58,14 @@ git log -S "setTimeout"           # 查看提交的代码中包含 setTimeout �
 
 git 查看某次commit内容: git show commitID
 当我想从远程仓库里拉取一条本地不存在的分支时：
+    git fetch upstream
     git checkout -b 本地分支名 upstream/远程分支名
 这个将会自动创建一个新的本地分支，并与指定的远程分支关联起来。
 
 创建远程分支并把本地分支推到远程分支:
-    git push upstream hotfix:tbox_account_hotfix
+    git push upstream 本地分支名:远程分支名
 删除远程分支:
-    git push upstream -d tbox_account_hotfix
+    git push upstream -d 远程分支名
 
 Git revert到某一个commit:
 
@@ -209,3 +218,51 @@ Serverless 应用原生可以支持高可用，可以应对突发的高访问量
 6.应用函数化
 每一个调用完成一个业务动作，应用会被分解成多个细颗粒度的操作。由于状态无法本地持久化，这些细颗粒度的操作是无状态的，类似于传统编程里无状态的函数。Serverless 架构下的应用会被函数化，但不能说 Serverless 就是 Function as a Service（FaaS）。Serverless 涵盖了 FaaS 的一些特性，可以说 FaaS 是 Serverless 架构实现的一个重要手段。
 ----------
+redis 是单线程！通常请求都会很快处理完，但是当我们使用HGETALL大量的时候，必须遍历每个字段来获取数据，这期间消耗的CPU资源和字段数成正比，如果还用了PIPELINING，无疑更是雪上加霜。
+----------
+数据库中，当两个表建立一对多关系的时候,"一"的那一端是**父表**,"多"的那一端是**子表**。
+----------
+幂等性:就是用户对于同一操作发起的一次请求或者多次请求的结果是一致的,不会因为多次点击而产生了副作用.
+----------
+YAML: 锚点&
+    defaults: &defaults
+      adapter:  postgres
+      host:     localhost
+    development:
+      database: myapp_development
+      <<: *defaults
+等同于：
+    defaults:
+      adapter:  postgres
+      host:     localhost
+    development:
+      database: myapp_development
+      adapter:  postgres
+      host:     localhost
+&用来建立锚点（defaults），<< 表示合并到当前数据，*用来引用锚点。
+
+YAML: 别名*
+    - &showell Steve
+    - Clark
+    - Brian
+    - *showell
+转为 JavaScript 代码如下:
+    ['Steve', 'Clark', 'Brian', 'Steve']
+
+sammy:
+  - &SAMMY1
+    name: vin
+    paramType: query
+    required: true
+    type: string
+    description: 车辆vin码
+  - &SAMMY2
+    public/javascripts/vendor/sammy*.js
+
+mobile:
+  - *SAMMY1
+  - *SAMMY2
+  - public/javascripts/something_else.js
+----------
+任务队列与消息队列都是由队列实现的异步协议，只是消息队列(Message Queue) 用来做异步通信，而任务队列(Task Queue) 更强调异步执行的任务。实际上发送消息也是一个任务，也就是说任务队列是在消息队列之上的管理工作，任务队列的很多典型应用就是发送消息，如发送邮件，发送短信，发送消息推送等。
+Broker: 消息中间件，任务消息存进队列，再按序发送给消费者

@@ -23,3 +23,18 @@ ls | tee ./test.log
 结果报错：Binary file (standard input) matches；经过查询后，意思为文件是二进制文件，不能直接grep，解决办法:
     cat 文件名 | grep -a 特定条件 ---> cat xxxx | grep -an 12345  # -n,--line-number 输出的同时显示行号
 ----------
+assigning value to shell variable using a function return value from Python
+.py
+    def fooPy():
+        return "some string"
+
+fooPy()
+.sh
+    fooShell=$(python fooPy.py)
+----------
+tar:
+Usage:
+  List:    tar -tf <archive-filename>
+  Extract: tar -xf <archive-filename>
+  Create:  tar -cf <archive-filename> [filenames...]
+  Help:    tar --help

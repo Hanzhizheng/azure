@@ -1611,3 +1611,218 @@ When setting up logging, always set **disable_existing_loggers** to **False**.
     with open('/etc/secret_key.txt') as f:
         SECRET_KEY = f.read().strip()
 ----------
+Django get static file url and path
+.. coding:: python
+
+    from django.contrib.staticfiles import finders
+
+    >>> finders.find('engine_model.xlsx')
+    '/Users/zzz/b/qiye6web/apps/other/static/engine_model.xlsx'
+    # String result is the file-system path
+
+    from django.contrib.staticfiles.templatetags.staticfiles import static
+    >>> static('engine_model.xlsx')
+    '/static/engine_model.xlsx'
+
+    from django.contrib.staticfiles.storage import staticfiles_storage
+
+    >>> staticfiles_storage.url('engine_model.xlsx')
+    '/static/engine_model.xlsx'
+
+    >>> self.request.build_absolute_uri(staticfiles_storage.url('my-static-image.png'))
+    'http://127.0.0.1:7744/static/my-static-image.png'
+----------
+from django.utils.decorators import classproperty
+@classproperty可以通过类或者实例访问属性，@property只能通过实例访问属性。
+----------
+Why is Django leaking memory?
+If you find your Django processes more and more memory, with no sign of releasing it, check to make sure your DEBUG setting is set to False. If DEBUG is True, then Django saves a copy of every SQL statement it has executed.
+
+(The queries are saved in **django.db.connection.queries**)
+
+To fix the problem, set DEBUG to False.
+
+If you need to clear the query list manually at any point in your functions,just call reset_queries(), like this:
+    from django import db
+    db.reset_queries()
+----------
+line_profiler是调查Python的CPU密集型性能问题最强大的工具
+
+kernprof will create an instance of LineProfiler and insert it into the __builtins__ namespace with the name profile. It has been written to be used as a decorator, so in your script, you decorate the functions you want to profile with @profile.
+
+    @profile
+    def slow_function(a, b, c):
+        ...
+
+In django:
+    runserver: kernprof -v -l ./manage.py runserver --noreload 7799
+    @profile your api
+
+
+memory_profiler内存
+In djagno:
+    runserver: mprof run manage.py runserver 7799
+    from memory_profiler import profile
+    @profile your api
+----------
+For performance critical views you might consider dropping the serializers entirely and simply use .values() in your database queries.
+In performance critical endpoints, use a "regular" serializer(serializers.Serializer instead of ModelSerializer), or none at all.
+Serialization time for a read only ModelSerializer was cut by almost a third.
+Serializer fields that are not used for writing or validation, should be read only.
+----------
+HTTP 304 服务器：服务器端的程序先取得If-Modified-Since:的值，然后与服务器上的文件最后修改时间对比，如果相同，就直接返回 304 Not Modified ，然后停止。
+----------
+from rest_framework.generics import GenericAPIView
+class View(GenericAPIView):
+    serializer_class = ...
+----------
+字节序列需要通过base64编码转成文本传送到后端，
+直接传，后端接收的是: hex_data = u'##\\x02\\xfeLEWTEB145KN100484\\x01', 无法正确转换
+----------
+django serializer source 正向查询报错
+.. coding:: python
+    class Device():
+        chip = models.OneToOneField(
+            Chip,
+            verbose_name=u'芯片',
+            on_delete=models.PROTECT,
+            null=True,
+            blank=True,
+            help_text=u'芯片(int)',
+        )
+    class DeviceSerializer(...):
+        chip_id = serializers.CharField(source='chip.chip_id')  # 如果device没有chip，报错，必须加上read_only=True
+
+    class ChipSerializer(...):
+        obd_id = serializers.CharField(source='device.obd_id')  # 如果chip没有关联device，返回空
+----------
+清除cache_page装饰的缓存
+from django.utils.cache import get_cache_key
+from django.core.cache import cache
+key = get_cache_key(request)
+cache.delete(key)
+
+get all keys: cache.keys('*')
+
+from django.utils.functional import cached_property
+
+The Vary header defines which request headers a cache mechanism should take into account when building its cache key. By default, Django’s cache system creates its cache keys using the requested fully-qualified URL – e.g., "https://www.example.com/stories/2005/?order_by=author".
+    from django.views.decorators.vary import vary_on_headers
+
+    @vary_on_headers('User-Agent')
+    def my_view(request):
+        ...
+
+.. coding:: python
+
+    def delete_cache(key):
+        rc = re.compile(r'[A-Z]+[a-z]+')
+        temp_list = rc.findall(key)
+        key = '_'.join(temp_list)
+        cache.delete_many(cache.keys('*.%s.*' % key.lower()))
+
+
+    class DeleteCacheQuerySet(QuerySet):
+        def update(self, *args, **kwargs):
+            key = self.model.__name__
+            delete_cache(key)
+            super().update(*args, **kwargs)
+
+
+    class DeleteCacheManager(Manager):
+        def get_queryset(self):
+            return DeleteCacheQuerySet(model=self.model, using=self._db, hints=self._hints)
+
+        def create(self, *args, **kwargs):
+            key = self.model.__name__
+            delete_cache(key)
+            super().create(*args, **kwargs)
+
+
+    class BaseModel(models.Model):
+
+        def save(self, *args, **kwargs):
+            key = self.__class__.__name__
+            delete_cache(key)
+            super().save(*args, **kwargs)
+
+        objects = DeleteCacheManager()
+
+        class Meta:
+            abstract = True
+----------
+django 模型的Meta 保存在_meta中:
+get model verbose name:
+    SomeModel._meta.verbose_name.title()
+---------
+Avoid using null on string-based fields such as CharField and TextField. One exception is when a CharField has both unique=True and blank=True set. In this situation, null=True is required to avoid unique constraint violations when saving multiple objects with blank values.
+---------
+通过模型名称获得模型类
+    from django.contrib.contenttypes.models import ContentType
+    ContentType.objects.get(model=model_name.lower()).model_class()
+----------
+dry_yasg 在swagger_auto_schema中实例化serializer:
+.. coding:: python
+    class MultiApiRequestSerializer(serializers.Serializer):
+        def __init__(self, name):
+            choices = self.get_choices(name)
+            field = serializers.ChoiceField(
+                required=True,
+                choices=choices,
+            )
+            self.fields['field'] = field
+            super().__init__()
+        
+    @swagger_auto_schema(
+        request_body=MultiApiRequestSerializer('xxx'),
+    )
+    def some_post():
+        pass
+        
+    @swagger_auto_schema(
+        query_serializer=MultiApiRequestSerializer('xxx'),
+    )
+    def some_get():
+        pass
+在post方法中，传的参数不同，文档也不会改变，都是第一个实例化的serializer的文档，要根据name写多个serializer类。
+在get方法中可以。
+----------
+判断filefield字段是否有文件
+if instance.some_file_field**.name**:
+    do something with instance.some_file_field**.path**
+----------
+----------
+restframework 修改单个view的url:
+.. coding:: python
+    def monitor_truck_detail(self, request, vehicleFrameNo, *args, **kwargs):
+        """监控页车辆信息
+        """
+        truck = self.get_queryset().filter(vehicleFrameNo=vehicleFrameNo).first()
+        serializer = self.get_serializer(truck)
+        return Response(serializer.data)
+    # url
+    monitor_truck_detail = views.TruckViewSet.as_view({
+        'get': 'monitor_truck_detail'
+    })
+    urlpatterns += [
+        path(r'truck/<str:vehicleFrameNo>/monitor_truck_detail/', monitor_truck_detail)
+    ]
+----------
+.. coding:: python
+    for truck in fence.trucks.iterator():
+        truck.fences = [fence.id]
+        truck.save(update_fields=['fences'])
+    # ValueError: The following fields do not exist in this model or are m2m fields: fences
+    # In fact, if you haven't modified any other fields, there's no need to call save at all: calling add on the m2m field already modifies the database.
+    for truck in fence.trucks.iterator():
+        trucks.fences.set([fence])
+----------
+django-mysql
+A final way to add the extensions, useful when you don’t control the model class - for example with built in Django models.
+.. coding:: python
+    from django.contrib.auth.models import User
+    from django_mysql.models import add_QuerySetMixin
+    qs = User.objects.all()
+    qs = add_QuerySetMixin(qs)
+    # Now qs has all the extensions!
+----------

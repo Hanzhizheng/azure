@@ -498,7 +498,7 @@ for 循环还有一个 else 从句，这个 else 从句会在循环正常结束�
 ----------
 PEP8 换行
 
-Yes:
+**Yes**:
 
 # Aligned with opening delimiter.
 foo = long_function_name(var_one, var_two,
@@ -515,7 +515,13 @@ foo = long_function_name(
     var_one, var_two,
     var_three, var_four)
 
-No:
+# How to break a line of chained methods in Python?
+
+history = instance.history.only('prefix_request_id') \
+    .filter(operation_type='prefix') \
+    .last()
+
+**No**:
 
 # Arguments on first line forbidden when not using vertical alignment.
 foo = long_function_name(var_one, var_two,
@@ -1534,4 +1540,314 @@ signal包的核心是使用signal.signal()函数来预设(register)信号处理�
     Waiting....
     Waiting....
     ...
+----------
+python3-参数中的冒号与箭头:
+    冒号后面是建议传入的参数类型
+    箭头后面是建议函数返回的类型
+例：
+
+def greeting(name: str) -> str:
+    return 'Hello ' + name
+并非强制
+----------
+Python通过字符串名导入模块: importlib.import_module
+.. coding:: python
+    def import_string(dotted_path):
+    """
+    Import a dotted module path and return the attribute/class designated by the
+    last name in the path. Raise ImportError if the import failed.
+    """
+        try:
+            module_path, class_name = dotted_path.rsplit('.', 1)
+        except ValueError as err:
+            raise ImportError("%s doesn't look like a module path" % dotted_path) from err
+
+        module = import_module(module_path)
+
+        try:
+            return getattr(module, class_name)
+        except AttributeError as err:
+            raise ImportError('Module "%s" does not define a "%s" attribute/class' % (
+                module_path, class_name)
+            ) from err
+----------
+In [6]: sys.exc_info?
+Docstring:
+exc_info() -> (type, value, traceback)  exc_type, exc_value, exc_traceback = sys.exc_info()[:3]
+----------
+nonlocal关键字用来在函数或其他作用域中使用外层(非全局)变量
+.. coding:: python
+    def function():
+        x = 100
+        def incr(y):
+            x = x + y
+        incr(100)
+    >>> UnboundLocalError: local variable 'x' referenced before assignment
+
+    def function():
+    x = 100
+    def incr(y):
+        nonlocal x
+        x = x + y
+    incr(100)
+    print(x)
+----------
+Dict一般情况下耗时排序(从大到小)
+
+for k,v in dict.items()  dict.items()方法的耗时要远远大于其他方法
+>>
+for k,v in zip(d.iterkeys(),d.itervalues())
+>
+for k,v in d.iteritems()
+>
+for i in d.keys()
+>
+for i in d.iterkeys()
+=
+for i in d
+----------
+Example NumPy Style Python Docstrings: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_numpy.html#example-numpy
+Example Google Style Python Docstrings: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google
+----------
+Python3中字符串与字节之间相互转换
+字符串转字节 str --> bytes
+    print(str.encode(b))  # 默认 encoding="utf-8"
+    print(bytes(b, encoding="utf8"))
+    print(b.encode())      # 默认 encoding="utf-8"
+
+字节转字符串 bytes --> str
+    print(bytes.decode(a))   # 默认encoding="utf-8"
+    print(str(a, encoding="utf-8"))
+    print(a.decode())       # 默认 encoding="utf-8"
+----------
+catch Broken Pipe
+.. coding:: python
+    try:
+    # do something
+    except socket.error, e:
+        # A socket error
+    except IOError, e:
+        if e.errno == errno.EPIPE:
+            # EPIPE error
+        else:
+            # Other error
+----------
+islice(iterable, [start, ] stop [, step]): 创建一个迭代器，生成项的方式类似于切片返回值: iterable[start : stop : step]，将跳过前start个项，迭代在stop所指定的位置停止，step指定用于跳过项的步幅。与切片不同，负值不会用于任何start，stop和step，如果省略了start，迭代将从0开始，如果省略了step，步幅将采用1.
+----------
+submit gives results as soon as any thread in the ThreadPoolExecutor maxThreads=2 completes. map gives results in the order they are submitted.
+----------
+itertools product:
+.. coding:: python
+    >>> for i in product(['a','b','c'],['0','1']):print i
+    ('a', '0')
+    ('a', '1')
+    ('b', '0')
+    ('b', '1')
+    ('c', '0')
+    ('c', '1')
+----------
+httpie 发送multipart/form-data:
+    http **-f** patch http://127.0.0.1:7744/device/device_model/1/ tboxFactoryNote='tfn' Authorization:"$token"
+requests.patch(url+'1/', headers={'AUTHORIZATION': token}, data=data)
+----------
+Let’s recap what your WSGI Web server has to do to serve requests aimed at a WSGI application:
+
+First, the server starts and loads an ‘application’ callable provided by your Web framework/application
+Then, the server reads a request
+Then, the server parses it
+Then, it builds an ‘environ’ dictionary using the request data
+Then, it calls the ‘application’ callable with the ‘environ’ dictionary and a ‘start_response’ callable as parameters and gets back a response body.
+Then, the server constructs an HTTP response using the data returned by the call to the ‘application’ object and the status and response headers set by the ‘start_response’ callable.
+And finally, the server transmits the HTTP response back to the client
+----------
+set 可变 frozenset 不可变 how to hash a dict: hash(frozenset(my_dict.items()))
+----------
+Python的select方法直接调用操作系统的IO接口，它监控sockets, open files, and pipes(所有带fileno()方法的文件句柄)何时变成readable和writeable, 或者通信错误，select()使得同时监控多个连接变的简单，并且这比写一个长循环来等待和监控多客户端连接要高效，因为select直接通过操作系统提供的C的网络接口进行操作，而不是通过Python的解释器。
+----------
+**grequests**组合了HTTP库请求和gevent，其结果就是具有很简单的API来做并发HTTP请求
+.. coding:: python
+    import grequests
+
+    def run_experiment():
+        urls = (url for url in urls)
+        response_futures = (grequests.get(u) for u in urls)
+        responses = grequests.imap(response_futures, size = 100)  # Concurrently converts a generator object of Requests to a generator of Responses
+        response_size = sum(len(r.text) for r in responses)
+        return response_size
+----------
+nonlocal声明的变量不是局部变量,也不是全局变量,而是外部嵌套函数内的变量。
+----------
+Python 保存 excel 里的图片文件
+.. coding:: python
+    import zipfile
+    XLSname = "/Users/user/myfile.xlsx"
+    EmbeddedFiles = zipfile.ZipFile(XLSname).namelist()
+    ImageFiles = [F for F in EmbeddedFiles if F.count('.jpg') or F.count('.jpeg') ]
+
+    for Image in ImageFiles:
+        zipfile.ZipFile(XLSname).extract(Image, '/Path to save')
+----------
+def compute_months(self, first_date, second_date):
+    year1, month1, year2, month2 = map(
+        int,
+        (first_date[:4], first_date[5:7], second_date[:4], second_date[5:7])
+    )
+
+    months = [
+        '{:0>4}-{:0>2}'.format(year, month)
+        for year in range(year1, year2 + 1)
+        for month in range(month1 if year == year1 else 1, month2 + 1 if year == year2 else 13)
+    ]
+    months.reverse()
+    return months
+
+from datetime import date, timedelta
+
+sdate = date(2008, 8, 15)   # start date
+edate = date(2008, 9, 15)   # end date
+
+delta = edate - sdate       # as timedelta
+
+for i in range(delta.days + 1):
+    day = sdate + timedelta(days=i)
+    print(day)
+----------
+enum
+Python has had type hinting for a while now — you knew that, right? Big companies are type hinting their code and so should you because the power of types can even make shitty languages less shitty. Before types, Python had already started moving in this direction with the enum module. It allows you to define a type as a set of predefined constants much like in other languages. Here’s an example from the documentation:
+.. coding:: python
+    >>> from enum import Enum
+    >>> class Color(Enum):
+    ...     RED = 1
+    ...     GREEN = 2
+    ...     BLUE = 3
+    ...
+    >>> print(Color.RED)
+    Color.RED
+    >>> print(Color.RED.name)
+    RED
+    >>> print(Color.RED.value)
+    1
+----------
+aiohttp get pass params
+.. coding:: python
+    payload = [('key', 'value1'), ('key', 'value2')]
+    async with aiohttp.get('http://httpbin.org/get',
+                           params=payload) as r:
+        assert r.url == 'http://httpbin.org/get?key=value2&key=value1'
+----------
+Convert file to base64 string on Python 3
+.. coding:: python
+    >>> import base64
+    >>> example = b'\x01'*10
+    >>> example
+    b'\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+    >>> result = base64.b64encode(example).decode('ascii')
+    >>> print(repr(result))
+    'AQEBAQEBAQEBAQ=='
+----------
+log formatter color
+.. coding:: python
+    import logging
+    class CustomFormatter(logging.Formatter):
+        """Logging Formatter to add colors and count warning / errors"""
+        # **BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)**
+        # color = "\x1b[3%d;21m" % (num)
+        # ;1m bold style
+        grey = "\x1b[38;21m"
+        yellow = "\x1b[33;21m"
+        red = "\x1b[31;21m"
+        bold_red = "\x1b[31;1m"
+        reset = "\x1b[0m"
+        format = '[%(levelname)s][logger: %(name)s][%(asctime)s][%(filename)s: %(lineno)d][%(message)s]'
+
+        FORMATS = {
+            logging.DEBUG: grey + format + reset,
+            logging.INFO: grey + format + reset,
+            logging.WARNING: yellow + format + reset,
+            logging.ERROR: red + format + reset,
+            logging.CRITICAL: bold_red + format + reset
+        }
+
+        def format(self, record):
+            log_fmt = self.FORMATS.get(record.levelno)
+            formatter = logging.Formatter(log_fmt)
+            return formatter.format(record)
+----------
+In [9]: json.dumps(())
+Out[9]: '[]'
+----------
+协程 (Coroutine) 本质上是一个函数，特点是在代码块中可以将执行权交给其他协程：
+.. coding:: python
+    import asyncio
+
+    async def a():
+        print('Suspending a')
+        await asyncio.sleep(0)
+        print('Resuming a')
+
+    async def b():
+        print('In b')
+
+    async def main():
+        await asyncio.gather(a(), b())
+
+    if __name__ == '__main__':
+        asyncio.run(main())
+        # Suspending a
+        # In b
+        # Resuming a
+
+1. 在协程a中，有一句 await asyncio.sleep(0)，await表示调用协程，sleep 0 并不会真的sleep因为时间为0，但是却可以把控制权交出去了。
+2. asyncio.run 是 Python 3.7 新加的接口，要不然你得这么写:
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    loop.close()
+----------
+How can I add attributes to a module at run time?
+    setattr(sys.modules[__name__], 'attr1', 'attr1')
+----------
+aiohttp supports multiple types of streaming uploads, which allows you to send large files without reading them into memory.
+
+As a simple case, simply provide a file-like object for your body:
+.. coding:: python
+    with open('massive-body', 'rb') as f:
+       await session.post('http://httpbin.org/post', data=f)
+
+    # Or you can use asynchronous generator:
+
+    async def file_sender(file_name=None):
+        async with aiofiles.open(file_name, 'rb') as f:
+            chunk = await f.read(64*1024)
+            while chunk:
+                yield chunk
+                chunk = await f.read(64*1024)
+
+    # Then you can use file_sender as a data provider:
+
+    async with session.post('http://httpbin.org/post',
+                            data=file_sender(file_name='huge_file')) as resp:
+        print(await resp.text())
+
+    # Because the content attribute is a StreamReader (provides async iterator protocol), you can chain get and post requests together:
+
+    resp = await session.get('http://python.org')
+    await session.post('http://httpbin.org/post',
+                       data=resp.content)
+----------
+In Dynamic Programming we store the solution to the problem so we do not need to recalculate it. By finding the solutions for every single sub-problem, we can tackle(应付) the original problem itself.
+
+Memoisation is the act of storing a solution.
+
+There are 3 main parts to divide and conquer:
+    1. Divide the problem into smaller sub-problems of the same type.
+    2. Conquer - solve the sub-problems recursively.
+    3. Combine - Combine all the sub-problems to create a solution to the original problem.
+
+Dynamic programming has one extra step added to step 2. This is memoisation. The purpose of dynamic programming is to not calculate the same thing twice.
+.. coding:: python
+    def fibonacciVal(n):
+        memo[0], memo[1] = 0, 1
+        for i in range(2, n+1):
+            memo[i] = memo[i-1] + memo[i-2]
+        return memo[n]
 ----------
