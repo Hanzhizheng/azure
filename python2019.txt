@@ -521,6 +521,30 @@ history = instance.history.only('prefix_request_id') \
     .filter(operation_type='prefix') \
     .last()
 
+# A continuation line is under-indented for a visual indentation.
+
+    Anti-pattern:
+    In this example the string "World" is under-indented by two spaces.
+
+    print("Python", ("Hello",
+                   "World"))
+    Best practice:
+    print("Python", ("Hello",
+                     "World"))
+
+# The backslash is redundant between brackets (E502)
+    There is no need for backslashes between brackets.
+
+    Anti-pattern:
+    print('Four score and seven years ago our fathers brought '\
+          'forth, upon this continent, a new nation, conceived '\
+          'in liberty, and dedicated to the proposition that '\
+          '"all men are created equal."')
+    Best practice:
+    print('Four score and seven years ago our fathers brought '
+          'forth, upon this continent, a new nation, conceived '
+          'in liberty, and dedicated to the proposition that '
+          '"all men are created equal."')
 **No**:
 
 # Arguments on first line forbidden when not using vertical alignment.
@@ -1850,4 +1874,8 @@ Dynamic programming has one extra step added to step 2. This is memoisation. The
         for i in range(2, n+1):
             memo[i] = memo[i-1] + memo[i-2]
         return memo[n]
+----------
+sys.modules是一个全局字典，该字典是Python启动后就加载在内存中。每当程序员导入新的模块，sys.modules都将记录这些模块。
+----------
+kafka group.id topic到group是是发布订阅的通信方式，即一条topic会被所有的group消费，属于一对多模式；group到consumer是点对点通信方式，属于一对一模式。同一个groupid的consumer属于一个队列方式，消费了就完事了。
 ----------

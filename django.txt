@@ -1826,3 +1826,9 @@ A final way to add the extensions, useful when you don’t control the model cla
     qs = add_QuerySetMixin(qs)
     # Now qs has all the extensions!
 ----------
+The application registry is initialized in three stages.
+    1. First Django imports each item in INSTALLED_APPS.
+    2. Then Django attempts to import the models submodule of each application, if there is one.
+        You must define or import all models in your application’s models.py or models/__init__.py. Otherwise, the application registry may not be fully populated(完全填充) at this point, which could cause the ORM to malfunction(故障).
+    3. Finally Django runs the ready() method of each application configuration.
+----------
