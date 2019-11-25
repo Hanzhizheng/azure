@@ -170,7 +170,8 @@ export GOPATH=$(go env GOPATH)
 alias pmma="python manage.py makemigrations"
 alias pmm="python manage.py migrate"
 alias pmr="python manage.py runserver"
-alias pms="python manage.py shell_plus"
+alias lmr="kernprof -v -l ./manage.py runserver --noreload"  # line_profiler
+alias mmr="mprof run manage.py runserver"  # memory_profiler
 alias cf="cd ~/b/Dfjk4Finance"
 alias cn="cd ~/b/Dfjk4NewEnergy"
 alias cj="cd ~/b/Jing5Web"
@@ -179,13 +180,33 @@ alias cz="cd ~/b/Zheng6Web"
 alias cb="cd ~/b/Burnish6Web"
 read temp
 case $temp in
-  b|dfjk)
-    workon $temp
+  cq|b)
+    export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python3
+    workon b
+    if [ $temp = 'cq' ]
+    then
+	cd ~/b/Qiye6Web
+    fi
   ;;
-  '')
+  cn|cf|cj|cg|d)
+    export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python2
     workon dfjk
+    if [ $temp = 'cn' ];
+    then
+        cd ~/b/Dfjk4NewEnergy
+    elif [ $temp = 'cf' ];
+    then
+	cd ~/b/Dfjk4Finance
+    elif [ $temp = 'cj' ];
+    then
+	cd ~/b/Jing5Web
+    elif [ $temp = 'cg' ];
+    then
+	cd ~/b/Guo6Web
+    fi
   ;;
 esac
+
 ----------
 提高性能最怕是没有方向，没有头绪的时候不妨试试三件套：并行、异步、加缓存。
 ----------
@@ -265,4 +286,6 @@ mobile:
   - public/javascripts/something_else.js
 ----------
 任务队列与消息队列都是由队列实现的异步协议，只是消息队列(Message Queue) 用来做异步通信，而任务队列(Task Queue) 更强调异步执行的任务。实际上发送消息也是一个任务，也就是说任务队列是在消息队列之上的管理工作，任务队列的很多典型应用就是发送消息，如发送邮件，发送短信，发送消息推送等。
-Broker: 消息中间件，任务消息存进队列，再按序发送给消费者
+Broker: 消息中间件，任务消息存进队列，再按序发送给消费者。
+----------
+事实上MySQL单表可以存储10亿级数据，只是这时候性能比较差，**业界公认MySQL单表容量在1KW以下是最佳状态**，因为这时它的BTREE索引树高在3~5之间。
