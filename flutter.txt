@@ -1,0 +1,29 @@
+Widget分为两种，一种是无状态的，叫StatelessWidget，它只能用来展示信息，不能有动作（用户交互）；另一种是有状态的，叫StatefulWidget，这种Widget可以通过改变状态使得UI发生变化，它可以包含用户交互。
+
+StatelessWidget的使用非常简单，我们只需要继承StatelessWidget，然后实现build方法就可以了：
+
+class FooWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // ...
+  }
+}
+
+StatefulWidget用起来麻烦一些，他还需要一个State:
+
+class BarWidget extends StatefulWidget {
+  @override
+  State createState() {
+    return _BarWidgetState();
+  }
+}
+
+class _BarWidgetState extends State<BarWidget> {
+  @override
+  Widget build(BuildContext context) {
+    // ...
+  }
+}
+这里看起来可能有些绕，BarWidget 依赖了 _BarWidgetState，而 _BarWidgetState 又继承了 State< BarWidget>。如果读者不太理解，其实也没有什么关系，这只是一个样板代码，照着写就行了。
+stateless widget 整个生命周期里都不会改变，所以 build 方法只会执行一次。而 stateful widget 只要状态改变，就会调用 build 方法重新创建 UI。
+----------

@@ -1,0 +1,163 @@
+----------
+Const:
+If the value is computed at runtime (new DateTime.now(), for example), you can not use a const for it. However, if the value is known at compile time (const a = 1;), then you should use const over final.
+There are 2 other large differences between const and final.
+  Firstly, if you're using const in class, you have to declare it as static const rather than just const.
+  Secondly, if you have a const collection, everything inside of that is in const. If you have a final collection, everything inside of that is not final.
+
+Final:  final String nickname = 'Bobby';
+final should be used over const if you don't know the value at compile time, and it will be calculated/grabbed at runtime. If you want an HTTP response that can't be changed, if you want to get something from a database, or if you want to read from a local file, use final. Anything that isn't known at compile time should be final over const.
+----------
+尽管Dart是强类型的，但类型声明是可选的，因为Dart可以推断类型。
+在Dart中所有东西都是对象，都继承于Object, 所以可以使用Object可以定义任何的变量，而且赋值后，类型也可以更改。
+Object和dynamic区别在于: Object会在编译阶段检查类型，而dynamic不会在编译阶段检查类型。建议不要滥用dynamic，一般尽量使用Object。
+----------
+通过创建一个与其类同名的函数来声明一个构造函数:
+
+    class Point {
+      num x, y;
+
+      Point(num x, num y) {
+        this.x = x;
+        this.y = y;
+      }
+    }
+将构造函数参数分配给实例变量的模式非常常见，Dart有语法糖以方便创建对象构造器:
+
+    class Point {
+      num x, y;
+
+      // 在构造函数运行前，语法糖会帮助设置x和y
+      Point(this.x, this.y);
+    }
+----------
+The Fat Arrow => is syntactic sugar for short anonymous functions. The two functions below are the same:
+
+    someFuture(arg).then((erg) => print(erg));  // (erg) => print(erg) 就是一个闭包
+    // is the same as
+    someFuture(arg).then((erg) {
+      return print(erg);
+    });
+    
+    (num x) => x;  //没有函数名，有必需的位置参数x
+    (num x) {return x;}  //等价于上面形式
+----------
+List<int> numbers = [0, 3, 1, 2, 7, 12, 2, 4];
+numbers.sort((num1, num2) => num1 - num2); //升序排序  升序就是让比较函数小于0
+numbers.sort((num1, num2) => num2 - num1); //降序排序  降序就是让比较函数大于0
+----------
+空安全运算符
+result = expr1 ?? expr2
+若expr1为null, 返回expr2的值，否则返回expr1的值
+
+expr1 ??= expr2  //expr1 ??= expr2 等价于 expr1 = expr1 ?? expr2 (转化成第一种)
+若expr1为null, 则把expr2的值赋值给expr1
+
+result = expr1?.value
+若expr1为null, 就返回null,否则就返回expr1.value的值
+
+
+main() {
+  var choice = question.choice ?? 'A';
+  //等价于
+  var choice;
+  if(question.choice == null) {
+    choice = 'A';
+  } else {
+    choice = question.choice;
+  }
+}
+----------
+级联操作符是 .., 可以让你对一个对象中字段进行链式调用操作:
+e.g1:
+    class X {
+      var a;
+      var b;
+    }
+
+    void main() {
+      X x = new X();
+      x
+        ..a = 1
+        ..b = 2;  //对 x 进行连续操作
+      print(x.a);
+      print('${x.b}');
+    }
+
+e.g2:
+    void main() {
+      var m = Map<String, int>();
+      m
+        ..['a'] = 1
+        ..['b'] = 2
+        ..forEach((key, value) => print('key is $key, value is $value'));
+    }
+
+----------
+List
+main() {
+  //初始化一:直接使用[]形式初始化
+  List<String> colorList1 = ['red', 'yellow', 'blue', 'green'];
+
+  //初始化二: var + 泛型
+  var colorList2 = <String> ['red', 'yellow', 'blue', 'green'];
+
+  //初始化三: 初始化定长集合
+  List<String> colorList3 = List(4);  // 初始化指定大小为4的集合,
+  colorList3.add('deepOrange');  // 注意: 一旦指定了集合长度，不能再调用add方法，否则会抛出Cannot add to a fixed-length list。
+                                 // 也容易理解因为一个定长的集合不能再扩展了。
+  print(colorList3[2]);  // null,此外初始化4个元素默认都是null
+
+  //初始化四: 初始化空集合且是可变长的
+  List<String> colorList4 = List();  // 相当于List<String> colorList4 = []
+  colorList4[2] = 'white';  // 这里会报错，[]= 实际上就是一个运算符重载，表示修改指定index为2的元素为white，然而它长度为0所以找不到index为2元素，所以会抛出IndexOutOfRangeException      
+}
+----------
+Map
+Map是key-value键值对集合。在Dart中的Map中的每个条目都可以迭代的。迭代顺序取决于HashMap，LinkedHashMap或SplayTreeMap的实现。如果您使用Map构造函数创建实例，则默认情况下会创建一个LinkedHashMap。
+
+HashMap
+HashMap不保证插入顺序。如果先插入key为A的元素，然后再插入具有key为B的另一个元素，则在遍历Map时，有可能先获得元素B。
+
+LinkedHashMap
+LinkedHashMap保证插入顺序。根据插入顺序对存储在LinkedHashMap中的数据进行排序。如果先插入key为A的元素，然后再插入具有key为B的另一个元素，则在遍历Map时，总是先取的key为A的元素，然后再取的key为B的元素。
+
+SplayTreeMap
+SplayTreeMap是一个自平衡二叉树，它允许更快地访问最近访问的元素。基本操作如插入，查找和删除可以在O（log（n））时间复杂度中完成。它通过使经常访问的元素靠近树的根来执行树的旋转。因此，如果需要更频繁地访问某些元素，则使用SplayTreeMap是一个不错的选择。但是，如果所有元素的数据访问频率几乎相同，则使用SplayTreeMap是没有用的。SplayTreeMap要求所有的键都是同一类型的.
+----------
+命名构造函数from和of的区别以及使用建议
+基本上每个集合(List、Set、LinkedHashSet、LinkedHashMap、Map、HashMap等)中都有from和of命名构造函数
+main() {
+  var map = {'a': 1, 'b': 2, 'c': 3};
+  var fromMap = Map.from(map); //返回类型是Map<dynamic, dynamic>
+  var ofMap = Map.of(map); //返回类型是Map<String, int>
+
+  var list = [1, 2, 3, 4];
+  var fromList = List.from(list); //返回类型是List<dynamic>
+  var ofList = List.of(list); //返回类型是List<int>
+}
+如果你传入的原有集合元素类型是确定的，请尽量使用of函数创建新的集合，否则就可以考虑使用from函数。
+----------
+每个应用程序都有一个顶级的main()函数，它作为应用程序的入口点。main()函数返回void，所以在dart可以直接省略void，并有一个可选的列表参数作为参数。
+----------
+class Rectangle {
+  num left, top, width, height;
+
+  Rectangle(this.left, this.top, this.width, this.height);
+
+  set right(num value) => left = value - width;  // 使用set作为前缀，只接收一个参数value
+  set bottom(num value) => top = value - height;  // 使用set作为前缀，只接收一个参数value
+  get square => width * height;  // getter函数计算面积，描述Rectangle状态特性
+  // get square() => width * height;  // ! Getters must be declared without a parameter list.
+}
+
+在dart中属性都不是直接访问的，所有对字段属性的引用都是对属性访问器函数的调用, 只有访问器函数才能直接访问它的状态。
+----------
+// 定义类的泛型很简单，只需要在类名后加: <T>；如果需要多个泛型类型参数，可以在尖括号中追加，用逗号分隔
+class List<T> {
+  T element;
+
+  void add(T element) {
+    //...
+  }
+}
