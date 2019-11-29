@@ -5,6 +5,7 @@ There are 2 other large differences between const and final.
   Firstly, if you're using const in class, you have to declare it as static const rather than just const.
   Secondly, if you have a const collection, everything inside of that is in const. If you have a final collection, everything inside of that is not final.
 
+<<<<<<< HEAD
 Final:  final String nickname = 'Bobby';
 final should be used over const if you don't know the value at compile time, and it will be calculated/grabbed at runtime. If you want an HTTP response that can't be changed, if you want to get something from a database, or if you want to read from a local file, use final. Anything that isn't known at compile time should be final over const.
 ----------
@@ -161,3 +162,10 @@ class List<T> {
     //...
   }
 }
+=======
+Final:
+final should be used over const if you don't know the value at compile time, and it will be calculated/grabbed at runtime. If you want an HTTP response that can't be changed, if you want to get something from a database, or if you want to read from a local file, use final. Anything that isn't known at compile time should be final over const.
+----------
+尽管Dart是强类型的，但类型声明是可选的，因为Dart可以推断类型。如果要明确说明不需要任何类型，请使用[特殊类型dynamic]。
+----------
+>>>>>>> 543424cf1f796ca5bb7b3b0baddc7bd950bf7660
