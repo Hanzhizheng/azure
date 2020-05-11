@@ -1,0 +1,21 @@
+----------
+links
+
+链接到其它服务中的容器。使用服务名称（同时作为别名）或服务名称：服务别名 （SERVICE:ALIAS） 格式都可以。
+links:
+– db
+– db:database
+– redis
+使用的别名将会自动在服务容器中的 /etc/hosts 里创建。例如：
+172.17.2.186 db
+相应的环境变量也将被创建。
+
+external_links
+
+链接到 docker-compose.yml 外部的容器，甚至并非 Compose 管理的容器。参数格式跟 links 类似。
+external_links:
+– redis_1
+– project_db_1:mysql
+– project_db_1:postgresql
+----------
+docker中，命令 python manage.py runserver 默认监听为本地 127.0.0.1:8000，所以即使通过端口映射出去，外面也无法访问，必须特别指定监听端口为python manage.py runserver 0.0.0.0:8000

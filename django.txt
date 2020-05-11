@@ -1832,3 +1832,62 @@ The application registry is initialized in three stages.
         You must define or import all models in your application’s models.py or models/__init__.py. Otherwise, the application registry may not be fully populated(完全填充) at this point, which could cause the ORM to malfunction(故障).
     3. Finally Django runs the ready() method of each application configuration.
 ----------
+Django rest-framework per action permission
+.. coding:: python
+    class UserPermission(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        if view.action == 'list':
+            return True
+        elif view.action == 'create':
+            return True
+        elif view.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return True
+        else:
+            return False
+
+    def has_object_permission(self, request, view, obj):
+        if view.action == 'retrieve':
+            return False
+        elif view.action in ['update', 'partial_update']:
+            return False
+        elif view.action == 'destroy':
+            return False
+        else:
+            return False
+----------
+Filtering the primary .qs
+
+To filter the primary queryset by the request object, simply override the FilterSet.qs property. For example, you could filter blog articles to only those that are published and those that are owned by the logged-in user (presumably the author’s draft articles).
+
+Filtering the related queryset for ModelChoiceFilter
+
+The queryset argument for ModelChoiceFilter and ModelMultipleChoiceFilter supports callable behavior. If a callable is passed, it will be invoked with the request as its only argument. This allows you to perform the same kinds of request-based filtering without resorting to overriding FilterSet.__init__.
+
+.. coding:: python
+    # Filtering the primary .qs
+    class ArticleFilter(django_filters.FilterSet):
+
+        class Meta:
+            model = Article
+            fields = [...]
+
+        @property
+        def qs(self):
+            parent = super(ArticleFilter, self).qs
+            author = getattr(self.request, 'user', None)
+
+            return parent.filter(is_published=True) \
+                | parent.filter(author=author)
+
+    # Filtering the related queryset for ModelChoiceFilter
+    def departments(request):
+        if request is None:
+            return Department.objects.none()
+
+        company = request.user.company
+        return company.department_set.all()
+
+    class EmployeeFilter(filters.FilterSet):
+        department = filters.ModelChoiceFilter(queryset=departments)
+----------

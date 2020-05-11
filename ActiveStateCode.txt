@@ -25,4 +25,3 @@
     addStr(test)
     print test
 ----------
-# Add a method to a class instance at runtime

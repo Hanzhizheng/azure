@@ -1,0 +1,5 @@
+----------
+json dump 中文
+.. coding:: python
+    json.dump(xxx,open('test.json', mode='w', encoding='utf-8'), ensure_ascii=False)
+----------
