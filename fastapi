@@ -1,0 +1,765 @@
+安装
+    pip install fastapi[all]
+运行
+    uvicorn main:app --reload
+文档
+    http://127.0.0.1:8000/docs
+----------
+路径参数
+    使用
+        @app.get("/items/{item_id}")  # 路径参数同格式化字符串语法
+        async def read_item(item_id: int):  # 路径参数类型声明int
+            return {"item_id": item_id}
+    注意
+        路径顺序很重要
+            如/user/me 和 /user/{user_id}，me需要在user_id前面，否则，user_id的路径还将与me相匹配，"认为"自己正在接收一个值为"me"的user_id参数。
+    枚举值
+        导入 Enum 并创建一个继承自 str 和 Enum 的子类。
+        通过从 str 继承，API 文档将能够知道这些值必须为 string 类型并且能够正确地展示出来（文档中路径值变为下拉框）
+        然后创建具有固定值的类属性，这些固定值将是可用的有效值
+        
+        from enum import Enum
+        from fastapi import FastAPI
+        
+        class ModelName(str, Enum):
+            alexnet = "alexnet"
+            lenet = "lenet"
+
+        @app.get("/models/{model_name}")
+        async def get_model(model_name: ModelName):
+            if model_name == ModelName.alexnet:
+                return {"model_name": model_name, "message": "Deep"}
+            
+            if model_name.value == "lenet":  # .value 是Enum子类方法
+                return {"model_name": model_name, "message": "LeCNN"}
+            
+            return {"model_name": model_name, "message": "Have some residuals"}
+    包含路径的路径参数
+        假设你有一个路径操作，它的路径为 /files/{file_path}
+        但是你需要 file_path 自身也包含路径，比如 home/johndoe/myfile.txt
+        因此，该文件的URL将类似于这样：/files/home/johndoe/myfile.txt
+        你可以使用直接来自 Starlette 的选项来声明一个包含路径的路径参数：
+        /files/{file_path:path}
+        参数的名称为 file_path，结尾部分的 :path 说明该参数应匹配任意的路径。
+----------
+查询参数
+    路径参数中不包含的函数参数，将被自动解释为"查询字符串"参数
+    默认值
+        @app.get("/items/")
+        async def read_item(skip: int = 0, limit: int = 10):
+            因此，访问 URL：
+                http://127.0.0.1:8000/items/
+            将与访问以下地址相同：
+                http://127.0.0.1:8000/items/?skip=0&limit=10
+    可选参数
+        @app.get("/items/{item_id}")
+        async def read_item(item_id: str, q: Optional[str] = None):
+    查询参数类型转换
+        声明 bool 类型，它们将被自动转换
+    必须查询参数
+        当你想让一个查询参数成为必需的，不声明任何默认值就可以
+----------
+请求体
+使用 Pydantic 模型来声明请求体，并能够获得它们所具有的所有能力和优点。
+
+    导入 Pydantic 的 BaseModel
+    创建数据模型
+        和声明查询参数时一样，当一个模型属性具有默认值时，它不是必需的。否则它是一个必需属性。将默认值设为 None 可使其成为可选属性。
+        class Item(BaseModel):
+            name: str
+            description: Optional[str] = None
+            price: float
+            tax: Optional[float] = None
+    声明参数&使用模型
+    Pydantic 模型具有 .dict（） 方法，该方法返回一个拥有模型数据的 dict。
+        @app.post("/items/")
+        async def create_item(item: Item):  # 声明参数
+            item_dict = item.dict()  # 使用模型
+    流程
+        将请求体作为 JSON 读取。
+        转换为相应的类型（在需要时）。
+        校验数据，数据无效，返回错误
+        将接收的数据赋值到参数 item 中。   
+----------
+函数参数将依次按如下规则进行识别：
+    如果在路径中也声明了该参数，它将被用作路径参数。
+    如果参数属于单一类型（比如 int、float、str、bool 等）它将被解释为查询参数。
+    如果参数的类型被声明为一个 Pydantic 模型，它将被解释为请求体。
+----------
+Query
+    显示声明查询参数：Query 第一个参数为默认值，为None表示该参数可选，为...表示必需
+        from fastapi import Query
+        @app.get("/items/")
+        async def read_items(
+            q: Optional[str] = Query(None, min_length=3, max_length=50, regex="^fixedquery$")
+        ):
+    查询参数可以为列表
+        http://localhost:8000/items/?q=foo&q=bar
+        @app.get("/items/")
+        async def read_items(q: List[str] = Query(["foo", "bar"])):  # 可带默认值，可选None
+
+Path
+    from fastapi import Path
+    路径参数总是必需的，因为它必须是路径的一部分。
+    所以，你应该在声明时使用 ... 将其标记为必需参数，None和默认值无效
+
+    与使用 Query 为查询参数声明更多的校验和元数据的方式相同，可以使用 Path 为路径参数声明相同类型的校验和元数据。
+    
+Body
+    默认单一值识别为查询参数，如果需要请求体为单一值而不定义pydantic，可以使用Body：from fastapi import Body
+    
+    Body 同样具有与 Query、Path 以及其他后面将看到的类完全相同的额外校验和元数据参数。
+    
+    你可以添加多个请求体参数到路径操作函数中，即使一个请求只能有一个请求体。
+    但是 FastAPI 会处理它，在函数中为你提供正确的数据，并在路径操作中校验并记录正确的模式。
+
+    你还可以指示 FastAPI 在仅声明了一个请求体参数的情况下，将原本的请求体嵌入到一个键中。
+        async def update_item(item_id: int, item: Item = Body(..., embed=True)):
+            results = {"item_id": item_id, "item": item}
+            return results
+        在这种情况下，FastAPI 将期望像这样的请求体：
+            {
+                "item": {
+                    "name": "Foo",
+                    "description": "The pretender",
+                    "price": 42.0,
+                    "tax": 3.2
+                }
+            }
+        而不是：
+            {
+                "name": "Foo",
+                "description": "The pretender",
+                "price": 42.0,
+                "tax": 3.2
+            }
+            
+Pydantic Field
+    与使用 Query、Path 和 Body 在路径操作函数中声明额外的校验和元数据的方式相同，你可以使用 Pydantic 的 Field 在 Pydantic 模型内部声明校验和元数据。
+
+Query 和 Path 和 Body 和 Field 参数
+        通用的校验和元数据：
+            alias  # 别名
+            title
+            description  # 参数描述
+            deprecated  # 暂时弃用
+        特定于字符串的校验：
+            min_length
+            max_length
+            regex
+        数值校验
+            gt：大于（greater than）
+            ge：大于等于（greater than or equal）
+            lt：小于（less than）
+            le：小于等于（less than or equal）
+
+你可以像定义 Query 参数和 Path 参数一样来定义 Cookie, Header参数。
+    Header
+        默认情况下, Header 将把参数名称的字符从下划线 (_) 转换为连字符 (-) 来提取并记录 headers.
+        HTTP headers 是大小写不敏感的
+        你可以通过一个Python list 的形式获得重复header的所有值。
+            @app.get("/items/")
+            async def read_items(x_token: Optional[List[str]] = Header(None)):
+----------
+额外信息
+    您可以使用 Config 和 schema_extra 为Pydantic模型声明一个示例
+        class Item(BaseModel):
+            name: str
+            description: Optional[str] = None
+            price: float
+            tax: Optional[float] = None
+
+            class Config:
+                schema_extra = {
+                    "example": {
+                        "name": "Foo",
+                        "description": "A very nice Item",
+                        "price": 35.4,
+                        "tax": 3.2,
+                    }
+                }
+    你可以通过传递额外信息给 Field 同样的方式操作Path, Query, Body等。
+        class Item(BaseModel):
+            name: str = Field(..., example="Foo")
+        
+        @app.put("/items/{item_id}")
+        async def update_item(
+            item_id: int,
+            item: Item = Body(
+                ...,
+                example={
+                    "name": "Foo",
+                    "description": "A very nice Item",
+                    "price": 35.4,
+                    "tax": 3.2,
+                },
+            ),
+        ):
+----------
+额外数据类型
+    你可以使用复杂的数据类型声明，如UUID，datetime.datetime，datetime.timedelta, bytes, frozenset
+----------
+响应体
+    你可以在任意的路径操作装饰器中使用 response_model 参数来声明用于响应的模型
+    类型
+        Pydantic 模型，但也可以是一个由 Pydantic 模型组成的 list，例如 List[Item]。
+            class Item(BaseModel):
+                name: str
+                description: Optional[str] = None
+                price: float
+                tax: Optional[float] = None
+                tags: List[str] = []
+
+            @app.post("/items/", response_model=Item)
+        Union组合，这意味着该响应将是两种类型中的任何一种
+            定义一个 Union 类型时，首先包括最详细的类型，然后是不太详细的类型
+            class CarItem(BaseItem):
+                type = "car"
+                
+            class PlaneItem(BaseItem):
+                type = "plane"
+                size: int
+            @app.get("/items/{item_id}", response_model=Union[PlaneItem, CarItem])
+        Dict，如果你事先不知道有效的字段/属性名称（对于 Pydantic 模型是必需的），这将很有用。
+            @app.get("/keyword-weights/", response_model=Dict[str, float])
+    装饰器中响应体相关参数
+        response_model_exclude_defaults=True 使用 response_model_exclude_unset 来仅返回显式设定的值
+        response_model_exclude_none=True 
+        response_model_exclude_unset=True
+        response_model_include 和 response_model_exclude
+            它们接收一个由属性名称 str 组成的 set 或 list 或 tuple 来包含（忽略其他的）或者排除（包含其他的）这些属性。
+----------
+响应码
+    @app.post("/items/", status_code=201)
+    @app.post("/items/", status_code=status.HTTP_201_CREATED)
+----------
+表单数据和json数据
+form表单是“键值对”的数据格式，例如：
+    a=1&b=2&c=3
+而json格式则与之不同，如下：
+    {"a":1,"b":2,"c":3}
+传递的数据比较简单，那么两种方式基本上没什么大区别（当然后台接收数据的方式肯定是不同的），但是如果数据比较复杂，比如包含数组、对象等时，就只有json才能胜任了。此外，如果数据是通过表单提交的，那么当然使用默认的form即可，因为它会自动构建数据结构，无需手工拼接；而如果是通过ajax发送数据，则最好使用json，因为可以通过简单的方法把对象转换为json字串。
+----------
+表单Form（Body子类）
+    安装
+        pip install python-multipart.
+    使用
+        from fastapi import FastAPI, Form
+
+        app = FastAPI()
+
+        @app.post("/login/")
+        async def login(username: str = Form(...), password: str = Form(...)):
+            return {"username": username}
+    与使用 Query、Path 和 Body 在路径操作函数中声明额外的校验和元数据的方式相同
+----------
+Data from forms is normally encoded using the "media type" application/x-www-form-urlencoded.
+
+But when the form includes files, it is encoded as multipart/form-data.
+----------
+文件File（Form子类）
+    安装
+        pip install python-multipart.
+    使用
+        from fastapi import FastAPI, File, UploadFile
+        app = FastAPI()
+
+        @app.post("/files/")
+        async def create_file(file: bytes = File(...)):
+            # 类型为bytes，Fastapi会自动读取文件内容
+            # 注意内容会全部存在内存中
+            return {"file_size": len(file)}
+        
+        @app.post("/uploadfile/")
+        async def create_upload_file(file: UploadFile = File(...)):
+            # UploadFile可以存储大文件
+            # 可以获得文件元数据
+            return {"filename": file.filename}
+    UploadFile
+        属性
+            filename
+            content_type
+            file：a SpooledTemporaryFile (a file-like object).
+                  This is the actual Python file that you can pass directly to other functions or libraries that expect a "file-like" object
+        异步方法(必需await，e.g. contents = await myfile.read()，如果非同步函数中，contents = myfile.file.read())
+            write(data)
+            read(size)
+            seek(offset)
+            close()
+    多个文件
+        @app.post("/files/")
+        async def create_files(files: List[bytes] = File(...)):
+            return {"file_sizes": [len(file) for file in files]}
+
+        @app.post("/uploadfiles/")
+        async def create_upload_files(files: List[UploadFile] = File(...)):
+            return {"filenames": [file.filename for file in files]}
+----------
+处理错误
+    raise HTTPException(
+        status_code=404,
+        detail="Item not found",
+        headers={"X-Error": "There goes my error"},  # 自定义header
+    )
+    客户端结果
+        {
+          "detail": "Item not found"
+        }
+    自定义异常处理器
+        from fastapi import FastAPI, Request
+        from fastapi.responses import PlainTextResponse
+
+        class CustomException(Exception):  # 其他异常也可以
+            def __init__(self, name: str):
+                self.name = name
+
+        app = FastAPI()
+
+        @app.exception_handler(CustomException)
+        async def unicorn_exception_handler(request: Request, exc: CustomException):
+            return PlainTextResponse(
+                exc.name,
+                status_code=418,
+            )
+
+
+        @app.get("/unicorns/{name}")
+        async def read_unicorn(name: str):
+            raise CustomException(name=name)
+            return {"unicorn_name": name}
+        
+    Use the RequestValidationError body
+        The RequestValidationError contains the body it received with invalid data.
+        You could use it while developing your app to log the body and debug it, return it to the user, etc.
+
+        from fastapi import FastAPI, Request, status
+        from fastapi.encoders import jsonable_encoder
+        from fastapi.exceptions import RequestValidationError
+        from fastapi.responses import JSONResponse
+        from pydantic import BaseModel
+
+        app = FastAPI()
+
+        @app.exception_handler(RequestValidationError)
+        async def validation_exception_handler(request: Request, exc: RequestValidationError):
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
+            )
+
+        class Item(BaseModel):
+            title: str
+            size: int
+
+        @app.post("/items/")
+        async def create_item(item: Item):
+            return item
+    FastAPI HTTPException 继承自 Starlette's HTTPException。
+        唯一的区别是，FastAPI HTTPException允许你在response添加头信息。主要在内部用于OAuth 2.0以及一些安全相关的功能。
+        因此，通常我们在代码中抛出FastAPI HTTPException异常。
+        但是，当我们注册异常处理器的时候，我们应该注册为Starlette HTTPException。
+        这样，当Starlette的内部代码或者Starlette扩展插件抛出Starlette HTTPException时，我们的处理器才能正常捕获和处理这个异常。
+        如果我们要在代码中同时使用这两个类，为了避免命名冲突，我们可以重命名其中一个类。
+        from fastapi import HTTPException
+        from starlette.exceptions import HTTPException as StarletteHTTPException
+    使用默认handler
+        from fastapi.exception_handlers import (
+            http_exception_handler,
+            request_validation_exception_handler,
+        )
+
+        @app.exception_handler(StarletteHTTPException)
+        async def custom_http_exception_handler(request, exc):
+            print(f"OMG! An HTTP error!: {repr(exc)}")
+            return await http_exception_handler(request, exc)
+
+
+        @app.exception_handler(RequestValidationError)
+        async def validation_exception_handler(request, exc):
+            print(f"OMG! The client sent invalid data!: {exc}")
+            return await request_validation_exception_handler(request, exc)
+----------
+路径配置
+    tags
+        @app.get("/items/", tags="items")
+    summary and description
+        @app.post(
+            "/items/",
+            response_model=Item,
+            summary="Create an item",
+            description="Create an item with all the information, name, description, price, tax and a set of unique tags",
+        )
+    Markdown描述模型
+        @app.post("/items/", response_model=Item, summary="Create an item")
+        async def create_item(item: Item):
+            """
+            Create an item with all the information:
+
+            - **name**: each item must have a name
+            - **description**: a long description
+            - **price**: required
+            - **tax**: if the item doesn't have tax, you can omit this
+            - **tags**: a set of unique tag strings for this item
+            """
+            return item
+    response_description
+        @app.post(
+            "/items/",
+            response_model=Item,
+            summary="Create an item",
+            response_description="The created item",
+        )
+    弃用某个路径
+    @app.get("/elements/", tags=["items"], deprecated=True)
+----------
+jsonable_encoder
+    There are some cases where you might need to convert a data type (like a Pydantic model) to something compatible with JSON (like a dict, list, etc). The result of calling it is something that can be encoded with the Python standard json.dumps().
+----------
+替换更新PUT
+部分更新PATCH
+    @app.patch("/items/{item_id}", response_model=Item)
+    async def update_item(item_id: str, item: Item):
+        stored_item_data = items[item_id]
+        stored_item_model = Item(**stored_item_data)
+        update_data = item.dict(exclude_unset=True)
+        updated_item = stored_item_model.copy(update=update_data)
+        items[item_id] = jsonable_encoder(updated_item)
+        return updated_item
+    In summary, to apply partial updates you would:
+        (Optionally) use PATCH instead of PUT.
+        Retrieve the stored data.
+        Put that data in a Pydantic model.
+        Generate a dict without default values from the input model (using exclude_unset).
+            This way you can update only the values actually set by the user, instead of overriding values already stored with default values in your model.
+        Create a copy of the stored model, updating it's attributes with the received partial updates (using the update parameter).
+        Convert the copied model to something that can be stored in your DB (for example, using the jsonable_encoder).
+        Save the data to your DB.
+        Return the updated model.
+        
+    You can actually use this same technique with an HTTP PUT operation.
+----------
+依赖注入
+    用处
+        重复使用代码
+        共享数据库链接
+        安全，认证等
+    使用
+        # 函数
+            async def common_parameters(q: Optional[str] = None, skip: int = 0, limit: int = 100):
+                return {"q": q, "skip": skip, "limit": limit}
+            @app.get("/items/")
+            async def read_items(commons: dict = Depends(common_parameters)):
+                return commons
+
+            @app.get("/users/")
+            async def read_users(commons: dict = Depends(common_parameters)):
+                return commons
+        # 类
+            class CommonQueryParams:
+                def __init__(self, q: Optional[str] = None, skip: int = 0, limit: int = 100):
+                    self.q = q
+                    self.skip = skip
+                    self.limit = limit
+
+            @app.get("/items/")
+            async def read_items(commons: CommonQueryParams = Depends(CommonQueryParams)):
+            #简写
+            async def read_items(commons: CommonQueryParams = Depends()):
+        # 装饰器里使用依赖注入
+            async def verify_token(x_token: str = Header(...)):
+                if x_token != "fake-super-secret-token":
+                    raise HTTPException(status_code=400, detail="X-Token header invalid")
+
+
+            async def verify_key(x_key: str = Header(...)):
+                if x_key != "fake-super-secret-key":
+                    raise HTTPException(status_code=400, detail="X-Key header invalid")
+                return x_key
+            # 装饰器里依赖不会用到返回值，适合执行流程类函数
+            @app.get("/items/", dependencies=[Depends(verify_token), Depends(verify_key)])
+            
+    全局依赖
+        app = FastAPI(dependencies=[Depends(verify_token), Depends(verify_key)])
+    依赖 with yield
+        async def get_db():
+            db = DBSession()
+            try:
+                yield db  # 响应前部分
+            finally:
+                db.close()  # 响应后部分
+                
+        class MySuperContextManager:
+            def __init__(self):
+                self.db = DBSession()
+
+            def __enter__(self):
+                return self.db
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                self.db.close()
+                
+        async def get_db():
+            with MySuperContextManager() as db:
+                yield db
+
+    use_cache 是否使用缓存结果
+        async def needy_dependency(fresh_value: str = Depends(get_value, use_cache=False)):
+            return {"fresh_value": fresh_value}
+----------
+安全
+    生成token
+        @app.post("/token")  # token 端点的响应必须是一个 JSON 对象。
+        async def login(form_data: OAuth2PasswordRequestForm = Depends()):  # OAuth2PasswordRequestForm一个包含username和password的表单
+            return {"access_token": user.username, "token_type": "bearer"}
+            # 包含access_token和token_type的JSON对象，固定值，必须有
+    从header中获得token
+        oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+        # OAuth2PasswordBearer use OAuth2, with the Password flow, using a Bearer token
+        #tokenUrl对应获得token的路径
+            async def read_items(token: str = Depends(oauth2_scheme)):
+                
+    jwt令牌
+        pip install python-jose[cryptography]生成和校验 JWT 令牌
+        SECRET_KEY = openssl rand -hex 32 生成随机密钥
+        ALGORITHM = "HS256" 设置算法
+        ACCESS_TOKEN_EXPIRE_MINUTES = 30 设置过期时间
+        
+        def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+            to_encode = data.copy()
+            if expires_delta:
+                expire = datetime.utcnow() + expires_delta
+            else:
+                expire = datetime.utcnow() + timedelta(minutes=15)
+            to_encode.update({"exp": expire})
+            encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+            return encoded_jwt
+        
+        async def get_current_user(token: str = Depends(oauth2_scheme)):
+            credentials_exception = HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+                username: str = payload.get("sub")
+                if username is None:
+                    raise credentials_exception
+                token_data = TokenData(username=username)
+            except JWTError:
+                raise credentials_exception
+            user = get_user(fake_users_db, username=token_data.username)
+            if user is None:
+                raise credentials_exception
+            return user
+        
+        @app.post("/token", response_model=Token)
+        async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+            user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Incorrect username or password",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(
+                data={"sub": user.username}, expires_delta=access_token_expires
+            )
+            # 为了避免 ID 冲突，当为用户创建 JWT 令牌时，你可以在 sub 键的值前加上前缀，例如 username:
+            # sub 键在整个应用程序中应该有一个唯一的标识符，而且应该是一个字符串
+            return {"access_token": access_token, "token_type": "bearer"}
+
+    哈希并校验密码
+        pip install passlib[bcrypt]
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        def verify_password(plain_password, hashed_password):
+            return pwd_context.verify(plain_password, hashed_password)
+----------
+中间件
+    "中间件"是一个函数,它在每个请求被特定的路径操作处理之前,以及在每个响应返回之前工作.
+    在函数的顶部使用装饰器 @app.middleware("http").
+    中间件参数接收如下参数:
+        request.
+    一个函数 call_next 它将接收 request 作为参数.
+    这个函数将 request 传递给相应的 路径操作.
+    然后它将返回由相应的路径操作生成的 response.
+    然后你可以在返回 response 前进一步修改它.
+
+    import time
+
+    from fastapi import FastAPI, Request
+
+    app = FastAPI()
+
+    @app.middleware("http")
+    async def add_process_time_header(request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)  # 请记住可以 用'X-' 前缀添加专有自定义请求头.
+        return response
+
+        def get_password_hash(password):
+            return pwd_context.hash(password)
+        
+    使用 scopes 的进阶用法
+        OAuth2 具有「作用域」的概念。
+        你可以使用它们向 JWT 令牌添加一组特定的权限。
+        然后，你可以将此令牌直接提供给用户或第三方，使其在一些限制下与你的 API 进行交互。
+----------
+CORS
+    前后端不同源，允许发送请求
+        from fastapi.middleware.cors import CORSMiddleware
+        
+        origins = [
+            "http://localhost.tiangolo.com",
+            "https://localhost.tiangolo.com",
+            "http://localhost",
+            "http://localhost:8080",
+        ]
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    支持以下参数：
+        allow_origins - 一个允许跨域请求的源列表。例如 ['https://example.org', 'https://www.example.org']。你可以使用 ['*'] 允许任何源。
+        allow_origin_regex - 一个正则表达式字符串，匹配的源允许跨域请求。例如 'https://.*\.example\.org'。
+        allow_methods - 一个允许跨域请求的 HTTP 方法列表。默认为 ['GET']。你可以使用 ['*'] 来允许所有标准方法。
+        allow_headers - 一个允许跨域请求的 HTTP 请求头列表。默认为 []。你可以使用 ['*'] 允许所有的请求头。Accept、Accept-Language、Content-Language 以及 Content-Type 请求头总是允许 CORS 请求。
+        allow_credentials - 指示跨域请求支持 cookies。默认是 False。另外，允许凭证时 allow_origins 不能设定为 ['*']，必须指定源。
+        expose_headers - 指示可以被浏览器访问的响应头。默认为 []。
+        max_age - 设定浏览器缓存 CORS 响应的最长时间，单位是秒。默认为 600。
+----------
+APIRouter
+    
+    app.include_router(some_router)
+    
+    prefix、tags、responses 以及 dependencies 参数只是（和其他很多情况一样）FastAPI 的一个用于帮助你避免代码重复的功能。
+        router = APIRouter(
+            prefix="/items",  # 前缀不能以 / 作为结尾。
+            tags=["items"],
+            dependencies=[Depends(get_token_header)],
+            responses={404: {"description": "Not found"}},
+        )
+        @router.get("/")
+        async def read_items():
+            return fake_items_db
+        @router.get("/{item_id}")
+        async def read_item(item_id: str):
+            ...
+        # 这个路径操作将包含标签的组合：["items"，"custom"]。
+        # 并且在文档中也会有两个响应，一个用于 404，一个用于 403。
+        @router.put(
+            "/{item_id}",
+            tags=["custom"],
+            responses={403: {"description": "Operation forbidden"}},
+        )
+        async def update_item(item_id: str):
+            ...
+    在另一个 APIRouter 中包含一个 APIRouter
+        router.include_router(other_router)
+----------
+SQL (Relational) Databases  # TODO
+----------
+BackgroundTasks
+    使用
+        from fastapi import BackgroundTasks, FastAPI
+
+        app = FastAPI()
+
+        def write_notification(email: str, message=""):
+            with open("log.txt", mode="w") as email_file:
+                content = f"notification for {email}: {message}"
+                email_file.write(content)
+
+        @app.post("/send-notification/{email}")
+        async def send_notification(email: str, background_tasks: BackgroundTasks):
+            background_tasks.add_task(write_notification, email, message="some notification")
+            return {"message": "Notification sent in the background"}
+    依赖注入
+        def write_log(message: str):
+            with open("log.txt", mode="a") as log:
+                log.write(message)
+
+
+        def get_query(background_tasks: BackgroundTasks, q: Optional[str] = None):  # 依赖注入可以收到路径操作函数的参数
+            if q: 
+                print(id(q))  # same id
+                message = f"found query: {q}\n"
+                background_tasks.add_task(write_log, message)
+            return q
+
+
+        @app.post("/send-notification/{email}")
+        async def send_notification(
+            email: str, background_tasks: BackgroundTasks, q: str = Depends(get_query)
+        ):
+            print(id(q))  # same id
+            message = f"message to {email}\n"
+            background_tasks.add_task(write_log, message)
+            return {"message": "Message sent"}
+----------
+设置 Swagger：
+    
+    可以使用参数 docs_url 设置它的 URL。
+    可以通过设置 docs_url=None 禁用它。
+
+    from fastapi import FastAPI
+
+    app = FastAPI(docs_url="/documentation", docs_url=None)
+
+    @app.get("/items/")
+    async def read_items():
+        return [{"name": "Foo"}]
+----------
+静态文件
+    pip install aiofiles
+    
+    Import StaticFiles.
+        "Mount" a StaticFiles() instance in a specific path.
+
+        from fastapi import FastAPI
+        from fastapi.staticfiles import StaticFiles
+
+        app = FastAPI()
+
+        app.mount("/static", StaticFiles(directory="static"), name="static")
+        # name参数fastapi内部使用，/static mount url
+    
+    What is "Mounting"¶
+
+        "Mounting" means adding a complete "independent" application in a specific path, that then takes care of handling all the sub-paths.
+
+        This is different from using an APIRouter as a mounted application is completely independent. The OpenAPI and docs from your main application won't include anything from the mounted application, etc.
+----------
+测试
+    # api
+    @app.get("/")
+    async def read_main():
+        return {"msg": "Hello World"}
+    # test
+    from fastapi.testclient import TestClient
+    from .main import app
+
+    client = TestClient(app)
+
+    def test_read_main():
+        response = client.get("/")
+        assert response.status_code == 200
+        assert response.json() == {"msg": "Hello World"}
+    client参数
+        To pass a path or query parameter, add it to the URL itself.
+        To pass a JSON body, pass a Python object (e.g. a dict) to the parameter json.
+        If you need to send Form Data instead of JSON, use the data parameter instead.
+        To pass headers, use a dict in the headers parameter.
+        For cookies, a dict in the cookies parameter.
+    执行
+        $ pip install pytest
+        $ pytest
+----------
