@@ -27,3 +27,20 @@ class _BarWidgetState extends State<BarWidget> {
 这里看起来可能有些绕，BarWidget 依赖了 _BarWidgetState，而 _BarWidgetState 又继承了 State< BarWidget>。如果读者不太理解，其实也没有什么关系，这只是一个样板代码，照着写就行了。
 stateless widget 整个生命周期里都不会改变，所以 build 方法只会执行一次。而 stateful widget 只要状态改变，就会调用 build 方法重新创建 UI。
 ----------
+本地化：
+    1. 配置环境变量:
+        export PUB_HOSTED_URL=https://pub.flutter-io.cn
+        export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+    2. 修改android\build.gradle中 buildscript 和 allprojects :
+        repositories {
+            // google()
+            // jcenter()
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/jcenter' }
+            maven { url 'http://maven.aliyun.com/nexus/content/groups/public' }
+        }
+----------
+flutter upgrade
+fatal: unable to access 'https://github.com/.../.git': Could not resolve host: github.com
+    git config --global --unset http.proxy 
+    git config --global --unset https.proxy

@@ -409,8 +409,10 @@ But when the form includes files, it is encoded as multipart/form-data.
             summary="Create an item",
             response_description="The created item",
         )
-    弃用某个路径
-    @app.get("/elements/", tags=["items"], deprecated=True)
+    弃用某个路径（弃用路径在文档中变成灰色）
+        @app.get("/elements/", tags=["items"], deprecated=True)
+    从文档中隐藏
+        @app.get("/items/", include_in_schema=False)
 ----------
 jsonable_encoder
     There are some cases where you might need to convert a data type (like a Pydantic model) to something compatible with JSON (like a dict, list, etc). The result of calling it is something that can be encoded with the Python standard json.dumps().
@@ -425,6 +427,7 @@ jsonable_encoder
         updated_item = stored_item_model.copy(update=update_data)
         items[item_id] = jsonable_encoder(updated_item)
         return updated_item
+
     In summary, to apply partial updates you would:
         (Optionally) use PATCH instead of PUT.
         Retrieve the stored data.
@@ -604,6 +607,15 @@ jsonable_encoder
         def get_password_hash(password):
             return pwd_context.hash(password)
         
+    一些中间件
+        HTTPSRedirectMiddleware
+            Enforces that all incoming requests must either be https or wss.        
+            Any incoming requests to http or ws will be redirected to the secure scheme instead.
+        TrustedHostMiddleware
+            Enforces that all incoming requests have a correctly set Host header, in order to guard against HTTP Host Header attacks.
+        GZipMiddleware
+            Handles GZip responses for any request that includes "gzip" in the Accept-Encoding header.
+            The middleware will handle both standard and streaming responses.
     使用 scopes 的进阶用法
         OAuth2 具有「作用域」的概念。
         你可以使用它们向 JWT 令牌添加一组特定的权限。
@@ -655,6 +667,7 @@ APIRouter
             ...
         # 这个路径操作将包含标签的组合：["items"，"custom"]。
         # 并且在文档中也会有两个响应，一个用于 404，一个用于 403。
+        # 一个来自router全局配置，一个来自自身单独配置
         @router.put(
             "/{item_id}",
             tags=["custom"],
@@ -688,7 +701,8 @@ BackgroundTasks
                 log.write(message)
 
 
-        def get_query(background_tasks: BackgroundTasks, q: Optional[str] = None):  # 依赖注入可以收到路径操作函数的参数
+        def get_query(background_tasks: BackgroundTasks, q: Optional[str] = None):  
+            # FastAPI will also inject parameters from the request into your dependencies, and include them into the OpenApi specification.
             if q: 
                 print(id(q))  # same id
                 message = f"found query: {q}\n"
@@ -732,7 +746,7 @@ BackgroundTasks
         app.mount("/static", StaticFiles(directory="static"), name="static")
         # name参数fastapi内部使用，/static mount url
     
-    What is "Mounting"¶
+    What is "Mounting"
 
         "Mounting" means adding a complete "independent" application in a specific path, that then takes care of handling all the sub-paths.
 
@@ -762,4 +776,172 @@ BackgroundTasks
     执行
         $ pip install pytest
         $ pytest
+----------
+额外的状态码
+    FastAPI 会自动使用默认的状态码或者使用你在 路径操作 中设置的状态码。
+    如果你想要返回主要状态码之外的状态码，你可以通过直接返回一个 Response 来实现，比如 JSONResponse，然后直接设置额外的状态码。
+    from fastapi.responses import JSONResponse
+
+    app = FastAPI()
+
+    items = {"foo": {"name": "Fighters", "size": 6}, "bar": {"name": "Tenders", "size": 3}}
+
+    @app.put("/items/{item_id}")
+    async def upsert_item(
+        item_id: str, name: Optional[str] = Body(None), size: Optional[int] = Body(None)
+    ):
+        if item_id in items:
+            item = items[item_id]
+            item["name"] = name
+            item["size"] = size
+            return item  # 返回200
+        else:
+            item = {"name": name, "size": size}
+            items[item_id] = item
+            return JSONResponse(status_code=status.HTTP_201_CREATED, content=item)  # 返回201
+----------
+直接返回响应
+    当你创建一个 FastAPI 路径操作 时，你可以正常返回以下任意一种数据：dict，list，Pydantic 模型，数据库模型等等。
+    FastAPI 默认会使用 jsonable_encoder 将这些类型的返回值转换成 JSON 格式
+    然后，FastAPI 会在后台将这些兼容 JSON 的数据（比如字典）放到一个 JSONResponse 中，该 JSONResponse 会用来发送响应给客户端。
+
+    你可以在你的 路径操作 中直接返回一个 JSONResponse。
+    直接返回响应可能会有用处，比如返回自定义的响应头和 cookies。
+    由于 FastAPI 不会对你返回的 Response 做任何改变，你必须确保你已经准备好响应内容。
+    例如，如果不首先将 Pydantic 模型转换为 dict，并将所有数据类型（如 datetime、UUID 等）转换为兼容 JSON 的类型，则不能将其放入JSONResponse中。
+        @app.put("/items/{id}")
+        def update_item(id: str, item: Item):
+            json_compatible_item_data = jsonable_encoder(item)
+            return JSONResponse(content=json_compatible_item_data)
+    自定义返回xml响应
+        from fastapi import FastAPI, Response
+        app = FastAPI()
+
+        @app.get("/legacy/")
+        def get_legacy_data():
+            data = """<?xml version="1.0"?>
+            <shampoo>
+            <Header>
+                Apply shampoo here.
+            </Header>
+            <Body>
+                You'll have to use soap here.
+            </Body>
+            </shampoo>
+            """
+            return Response(content=data, media_type="application/xml")
+
+    当你直接返回 Response 时，它的数据既没有校验，又不会进行转换（序列化），也不会自动生成文档。
+    但是你仍可以参考 OpenApI 中的额外响应 给响应编写文档。
+        @app.get("/items/{item_id}", response_model=Item, responses={404: {"model": Message}})
+        async def read_item(item_id: str):
+            if item_id == "foo":
+                return {"id": "foo", "value": "there goes my hero"}
+            else:
+                return JSONResponse(status_code=404, content={"message": "Item not found"}) 
+----------
+自定义响应
+    ORJSONResponse
+        如果你需要压榨性能，你可以安装并使用 orjson 并将响应设置为 ORJSONResponse
+        参数 response_class 也会用来定义响应的「媒体类型」。    
+        在这个例子中，HTTP 头的 Content-Type 会被设置成 application/json。
+        from fastapi.responses import ORJSONResponse
+
+        app = FastAPI()
+
+        @app.get("/items/", response_class=ORJSONResponse)
+        async def read_items():
+            return [{"item_id": "Foo"}]
+    HTML 响应
+        参数 response_class 也会用来定义响应的「媒体类型」。
+        在这个例子中，HTTP 头的 Content-Type 会被设置成 text/html。
+        from fastapi.responses import HTMLResponse
+
+        app = FastAPI()
+
+        @app.get("/items/", response_class=HTMLResponse)
+        async def read_items():
+            return """
+            <html>
+                <head>
+                    <title>Some HTML in here</title>
+                </head>
+                <body>
+                    <h1>Look ma! HTML!</h1>
+                </body>
+            </html>
+        """
+
+    Response
+        其他全部的响应都继承自主类 Response。
+        你可以直接返回它。
+        Response 类接受如下参数：
+            content - 一个 str 或者 bytes。
+            status_code - 一个 int 类型的 HTTP 状态码。
+            headers - 一个由字符串组成的 dict。
+            media_type - 一个给出媒体类型的 str，比如 "text/html"。
+        可用响应
+            Response
+            HTMLResponse
+            PlainTextResponse
+            JSONResponse
+            ORJSONResponse
+            UJSONResponse
+            RedirectResponse
+            StreamingResponse  # 采用异步生成器或普通生成器/迭代器，然后流式传输响应主体。如果您有类似文件的对象（例如，由 open() 返回的对象），则可以在 StreamingResponse 中将其返回。
+            FileResponse
+----------
+Additional Responses in OpenAPI  # TODO
+----------
+Response Cookie
+    @app.post("/cookie/")
+    def create_cookie():
+        content = {"message": "Come to the dark side, we have cookies"}
+        response = JSONResponse(content=content)
+        response.set_cookie(key="fakesession", value="fake-cookie-session-value")
+        return response
+----------
+Response Header
+    @app.get("/headers/")
+    def get_headers():
+        content = {"message": "Hello World"}
+        headers = {"X-Cat-Dog": "alone in the world", "Content-Language": "en-US"}
+        return JSONResponse(content=content, headers=headers)
+----------
+Parameterized dependencies
+    Let's imagine that we want to have a dependency that checks if the query parameter q contains some fixed content.
+    But we want to be able to parameterize that fixed content.
+
+    from fastapi import Depends, FastAPI
+
+    app = FastAPI()
+
+
+    class FixedContentQueryChecker:
+        def __init__(self, fixed_content: str):
+            self.fixed_content = fixed_content
+
+        def __call__(self, q: str = ""):  # FastAPI will also inject parameters from the request into your dependencies, and include them into the OpenApi specification.
+            if q:
+                return self.fixed_content in q
+            return False
+
+
+    checker = FixedContentQueryChecker("bar")
+
+
+    @app.get("/query-checker/")
+    async def read_query_check(fixed_content_included: bool = Depends(checker)):
+        return {"fixed_content_in_query": fixed_content_included}
+----------
+直接使用请求
+    from fastapi import FastAPI, Request
+
+    app = FastAPI()
+
+
+    @app.get("/items/{item_id}")
+    def read_root(item_id: str, request: Request):
+        client_host = request.client.host
+        return {"client_host": client_host, "item_id": item_id}
 ----------
