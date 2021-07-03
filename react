@@ -1,0 +1,123 @@
+Bind method
+    Binding Event Handler in Render Method: We can bind the handler when it is called in the render method using bind() method.
+        import React, { Component } from 'react';
+  
+        class EventBind extends Component {
+            constructor(props) {
+                super(props)
+            
+                this.state = {
+                    message: 'Welcome'
+                }
+            }
+            
+            clickHandler() {
+                this.setState({
+                    message:'Farewell'
+                })
+            }
+        
+            render() {
+                return (
+                    <div>
+                        <h3>{this.state.message}</h3>
+                        <button onClick={this.clickHandler.bind(this)}>
+                                Click</button> 
+                    </div>
+                )
+            }
+        }
+
+    Binding Event Handler using Arrow Function: This approach is the best if you want to pass parameters to your event.
+        class EventBind extends Component {
+            constructor(props) {
+                super(props)
+            
+                this.state = {
+                    message: 'Welcome'
+                }
+            }
+            
+            clickHandler() {
+                this.setState({
+                    message:'Farewell'
+                })
+            }
+        
+            render() {
+                return (
+                    <div>
+                        <h3>{this.state.message}</h3>
+                        <button onClick={() => this.clickHandler()}>
+                        Click
+                        </button> 
+                    </div>
+                )
+            }
+        }
+
+    Binding Event Handler in the Constructor.
+    This has performance benefits as the events aren’t binding every time the method is called, as opposed to the previous two approaches.
+        this.clickHandler = this.clickHandler.bind(this)
+
+    Binding Event Handler using Arrow Function as a Class Property:
+    This is probably the best way to bind the events and still pass in parameters to the event handlers easily.
+        class EventBind extends Component {
+            constructor(props) {
+                super(props)
+            
+                this.state = {
+                    message: 'Welcome'
+                }
+            }
+        
+            clickHandler = () => {
+                this.setState({
+                    message:'Farewell'
+                })
+            }
+        
+            render() {
+                return (
+                    <div>
+                        <h3>{this.state.message}</h3>
+                        <button onClick={this.clickHandler}>
+                        Click
+                        </button> 
+                    </div>
+                )
+            }
+        }
+        // pass params
+            class MyComponent extends React.Component {
+                constructor(props) {
+                    super(props)
+                    this.state = {
+                        message: 'Welcome'
+                    }
+                }
+
+                clickHandler = (id) => {
+                    this.setState({
+                        message: id
+                    })
+                }
+
+                render() {
+                    return (
+                        <div>
+                            <h3>{this.state.message}</h3>
+                            <button onClick={this.clickHandler.bind(this, 'id')}>
+                            Click
+                            </button> 
+                        </div>
+                    )
+                }
+            }
+----------
+How do I pass a parameter to an event handler or callback?
+    You can use an arrow function to wrap around an event handler and pass parameters:
+        <button onClick={() => this.handleClick(id)} />
+    This is equivalent to calling .bind:
+        <button onClick={this.handleClick.bind(this, id)} />
+----------

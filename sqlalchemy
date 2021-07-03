@@ -1,0 +1,298 @@
+alembic
+    1. alembic init alembic
+    2. config
+        - target_metadata
+            from db import Base
+            target_metadata = Base.metadata
+
+            db/
+                __init__.py
+                    from .database import Base
+                    from models import *
+                database.py
+
+        - sqlalchemy.url
+            SQLALCHEMY_DATABASE_URL=${DIALECT}+${MYSQL_DRIVER}://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+            alembic/env.py
+                from dotenv import load_dotenv
+                load_dotenv()
+                config.set_main_option('sqlalchemy.url', os.getenv('SQLALCHEMY_DATABASE_URL'))
+
+    3. alembic revision --autogenerate -m "message"
+    4. alembic upgrade/downgrade head
+        alembic downgrade base # back to beginning
+
+----------
+Column objects are accessed from the Table.c 
+
+Metadata
+    is essentially a facade around a Python dictionary that stores a series of Table objects keyed to their string name
+    the CREATE / DROP feature of MetaData is useful for test suites, small and/or new applications, and applications that use short-lived databases
+        >>> user_table = Table(
+        ...     "user_account",
+        ...     metadata,
+        ...     Column('id', Integer, primary_key=True),
+        ...     Column('name', String(30)),
+        ...     Column('fullname', String)
+        ... )
+        >>> address_table =Table(
+        ...     "address",
+        ...     metadata,
+        ...     Column('id',Integer, primary_key=True),
+        ...     Column('user_id',ForeignKey('user_account.id'), nullable=False),
+        ...     Column('email_address',String, nullable=False)
+        ...)
+insert
+    this function generates a new instance of Insert which represents an INSERT statement in SQL
+    The insert() SQL Expression Construct
+        stmt = insert(user_table).values(name='spongebob', fullname="Spongebob Squarepants")
+    Executing the Statement
+        with engine.connect() as conn:
+            result = conn.execute(stmt)
+            conn.commit()
+    
+        the INSERT statement does not return any rows, and if only a single row is inserted,
+        it will usually include the ability to return information about column-level default values that were generated during the INSERT of that row,
+        most commonly an integer primary key value.
+        CursorResult.inserted_primary_key returns a tuple because a primary key may contain multiple columns
+                >>> result.inserted_primary_key
+                (1,)
+bulk_insert
+    >>> with engine.connect() as conn:
+    ...     result = conn.execute(
+    ...         insert(user_table),
+    ...         [
+    ...             {"name": "sandy", "fullname": "Sandy Cheeks"},
+    ...             {"name": "patrick", "fullname": "Patrick Star"}
+    ...         ]
+    ...     )
+    ...     conn.commit()
+
+insert from select
+    >>> select_stmt = select(user_table.c.id, user_table.c.name + "@aol.com")
+    >>> insert_stmt = insert(address_table).from_select(
+    ...     ["user_id", "email_address"], select_stmt
+    ... )
+insert returning
+    >>> insert_stmt = insert(address_table).returning(address_table.c.id, address_table.c.email_address)
+
+select
+    from table
+        >>> stmt = select(user_table).where(user_table.c.name == 'spongebob')
+        >>> with engine.connect() as conn:
+        ...     for row in conn.execute(stmt):
+        ...         print(row)
+
+        select(user_table.c.name, user_table.c.fullname)
+    
+    from orm
+        >>> select(User)
+        >>> select(User.name, User.fullname)
+
+    where()
+        and
+            >>> print(
+            ...     select(address_table.c.email_address).
+            ...     where(
+            ...          user_table.c.name == 'squidward',
+            ...          address_table.c.user_id == user_table.c.id
+            ...     )
+            ... )
+        and_, or_
+            >>> from sqlalchemy import and_, or_
+            >>> print(
+            ...     select(Address.email_address).
+            ...     where(
+            ...         and_(
+            ...             or_(User.name == 'squidward', User.name == 'sandy'),
+            ...             Address.user_id == User.id
+            ...         )
+            ...     )
+            ... )
+        filter_by()
+            >>> print(
+            ...     select(User).filter_by(name='spongebob', fullname='Spongebob Squarepants')
+            ... )
+
+update
+    >>> stmt = (
+    ...     update(user_table).where(user_table.c.name == 'patrick').
+    ...     values(fullname='Patrick the Star')
+    ... )
+
+----------
+relationship
+    OnetoMany
+        class Parent(Base):
+            __tablename__ = 'parent'
+            id = Column(Integer, primary_key=True)
+            children = relationship('Child')
+        class Child(Base):
+            __tablename__ = 'child'
+            id = Column(Integer, primary_key=True)
+            parent_id = Column(Integer, ForeignKey('parent.id'))
+    OnetoMany 反向查询
+        class Parent(Base):
+            __tablename__ = 'parent'
+            id = Column(Integer, primary_key=True)
+            children = relationship('Child', back_populates="parent")
+        class Child(Base):
+            __tablename__ = 'child'
+            id = Column(Integer, primary_key=True)
+            parent_id = Column(Integer, ForeignKey('parent.id'))
+            parent = relationship("Parent", back_populates="children")
+        
+        backref
+            class Parent(Base):
+                __tablename__ = 'parent'
+                id = Column(Integer, primary_key=True)
+                children = relationship('Child', backref="parent")
+    ManytoOne
+        class Parent(Base):
+            __tablename__ = 'parent'
+            id = Column(Integer, primary_key=True)
+            child_id = Column(Integer, ForeignKey('child.id'))
+            child = relationship("Child")
+        class Child(Base):
+            __tablename__ = 'child'
+            id = Column(Integer, primary_key=True)
+    ManytoOne 反向查询
+        class Parent(Base):
+            __tablename__ = 'parent'
+            id = Column(Integer, primary_key=True)
+            child_id = Column(Integer, ForeignKey('child.id'))
+            child = relationship("Child", back_populates="parents")
+        class Child(Base):
+            __tablename__ = 'child'
+            id = Column(Integer, primary_key=True)
+            parents = relationship("Parent", back_populates="child")
+        
+        backref
+            class Parent(Base):
+                __tablename__ = 'parent'
+                id = Column(Integer, primary_key=True)
+                child_id = Column(Integer, ForeignKey('child.id'))
+                child = relationship("Child", backref="parents")
+    OnetoMany to OnetoOne
+        class Parent(Base):
+            __tablename__ = 'parent'
+            id = Column(Integer, primary_key=True)
+            child = relationship("Child", uselist=False, back_populates="parent")
+        class Child(Base):
+            __tablename__ = 'child'
+            id = Column(Integer, primary_key=True)
+            parent_id = Column(Integer, ForeignKey('parent.id'))
+            parent = relationship("Parent", back_populates="child")
+    ManytoOne to OnetoOne
+        class Parent(Base):
+            __tablename__ = 'parent'
+            id = Column(Integer, primary_key=True)
+            child_id = Column(Integer, ForeignKey('child.id'))
+            child = relationship("Child", back_populates="parent")
+        class Child(Base):
+            __tablename__ = 'child'
+            id = Column(Integer, primary_key=True)
+            parent = relationship("Parent", back_populates="child", uselist=False)
+
+        backref
+            class Parent(Base):
+                __tablename__ = 'parent'
+                id = Column(Integer, primary_key=True)
+                child_id = Column(Integer, ForeignKey('child.id'))
+                child = relationship("Child", backref=backref("parent", uselist=False))
+    ManytoMany
+        association_table = Table('association', Base.metadata,
+            Column('left_id', Integer, ForeignKey('left.id')),
+            Column('right_id', Integer, ForeignKey('right.id'))
+        )
+        class Parent(Base):
+            __tablename__ = 'left'
+            id = Column(Integer, primary_key=True)
+            children = relationship("Child",
+            secondary=association_table)
+        class Child(Base):
+            __tablename__ = 'right'
+            id = Column(Integer, primary_key=True)
+    ManytoMany 反向查询
+        association_table = Table('association', Base.metadata,
+            Column('left_id', Integer, ForeignKey('left.id')),
+            Column('right_id', Integer, ForeignKey('right.id'))
+        )
+        class Parent(Base):
+            __tablename__ = 'left'
+            id = Column(Integer, primary_key=True)
+            children = relationship(
+                "Child",
+                secondary=association_table,
+                back_populates="parents")
+        class Child(Base):
+            __tablename__ = 'right'
+            id = Column(Integer, primary_key=True)
+            parents = relationship(
+                "Parent",
+                secondary=association_table,
+                back_populates="children")
+        
+        backref
+            association_table = Table('association', Base.metadata,
+                Column('left_id', Integer, ForeignKey('left.id')),
+                Column('right_id', Integer, ForeignKey('right.id'))
+            )
+            class Parent(Base):
+                __tablename__ = 'left'
+                id = Column(Integer, primary_key=True)
+                children = relationship("Child",
+                                secondary=association_table,
+                                backref="parents")
+            class Child(Base):
+                __tablename__ = 'right'
+                id = Column(Integer, primary_key=True)
+
+----------
+Result
+    all()
+        In [59]: s.execute(select(User.id)).all()
+        Out[59]: [(65,), (66,)]
+
+    fetchmany(size=None)
+        Fetch many rows. When all rows are exhausted, returns an empty list.
+        In [91]: s.execute(select(User.id)).fetchmany(size=1)
+        Out[91]: [(65,)]
+
+    first()
+        In [60]: s.execute(select(User.id)).first()
+        Out[60]: (65,)
+
+    one()
+        Return exactly one row or raise an exception.
+        In [62]: s.execute(select(User.id).where(User.id==66)).one()
+        Out[62]: (66,)
+        MultipleResultsFound: Multiple rows were found when exactly one was required
+
+    one_or_none()
+        You can also do a Product.query.filter_by(name='apple').one_or_none(),
+        which will return None if there is no product named apple in your database,
+        or an instance of class Product if there is exactly one product named apple in your database,
+        or raises an exception if there are multiple products named apple in your database.
+
+    scalar()
+        Fetch the first column of the first row, and close the result set.
+        Returns None if there are no rows to fetch.
+        In [63]: s.execute(select(User.id)).scalar()
+        Out[63]: 65
+        
+    scalar_one()
+        Return exactly one scalar result or raise an exception.
+
+    scalar_one_or_none()
+        like scalar_one with none
+    
+    scalars()
+        Return a ScalarResult filtering object which will return single elements rather than Row objects.
+        .all()
+            In [81]: s.execute(select(User.id)).scalars().all()
+            Out[81]: [65, 66]
+        .fetchmany(size=None)
+            In [92]: s.execute(select(User.id)).scalars().fetchmany(size=1)
+            Out[92]: [65]
+----------

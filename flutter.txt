@@ -41,6 +41,13 @@ stateless widget 整个生命周期里都不会改变，所以 build 方法只�
         }
 ----------
 flutter upgrade
+  同时更新Flutter SDK和你的依赖包
 fatal: unable to access 'https://github.com/.../.git': Could not resolve host: github.com
     git config --global --unset http.proxy 
     git config --global --unset https.proxy
+
+flutter packages get获取pubspec.yaml文件中列出的所有依赖包
+flutter packages upgrade 获取pubspec.yaml文件中列出的所有依赖包的最新版本
+----------
+调试 Flutter Apps
+  在运行应用程序前，请运行flutter analyze测试你的代码

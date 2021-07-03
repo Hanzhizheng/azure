@@ -29,10 +29,8 @@
         async def get_model(model_name: ModelName):
             if model_name == ModelName.alexnet:
                 return {"model_name": model_name, "message": "Deep"}
-            
             if model_name.value == "lenet":  # .value 是Enum子类方法
                 return {"model_name": model_name, "message": "LeCNN"}
-            
             return {"model_name": model_name, "message": "Have some residuals"}
     包含路径的路径参数
         假设你有一个路径操作，它的路径为 /files/{file_path}
@@ -57,14 +55,14 @@
     查询参数类型转换
         声明 bool 类型，它们将被自动转换
     必须查询参数
-        当你想让一个查询参数成为必需的，不声明任何默认值就可以
+        当你想让一个查询参数成为必需的，不声明任何默认值就可以q: str
 ----------
 请求体
 使用 Pydantic 模型来声明请求体，并能够获得它们所具有的所有能力和优点。
 
     导入 Pydantic 的 BaseModel
     创建数据模型
-        和声明查询参数时一样，当一个模型属性具有默认值时，它不是必需的。否则它是一个必需属性。将默认值设为 None 可使其成为可选属性。
+        和声明查询参数时一样，当一个属性具有默认值时，它不是必需的。否则它是一个必需属性。将默认值设为 None 可使其成为可选属性。
         class Item(BaseModel):
             name: str
             description: Optional[str] = None
@@ -160,6 +158,21 @@ Query 和 Path 和 Body 和 Field 参数
         你可以通过一个Python list 的形式获得重复header的所有值。
             @app.get("/items/")
             async def read_items(x_token: Optional[List[str]] = Header(None)):
+                return {"X-Token values": x_token}
+
+            如果你与路径操作通信时发送两个HTTP headers，就像：
+
+            X-Token: foo
+            X-Token: bar
+
+            响应会是:
+
+            {
+                "X-Token values": [
+                    "bar",
+                    "foo"
+                ]
+            }
 ----------
 额外信息
     您可以使用 Config 和 schema_extra 为Pydantic模型声明一个示例
@@ -211,7 +224,7 @@ Query 和 Path 和 Body 和 Field 参数
                 tags: List[str] = []
 
             @app.post("/items/", response_model=Item)
-        Union组合，这意味着该响应将是两种类型中的任何一种
+        Union组合，意味着该响应将是两种类型中的任何一种
             定义一个 Union 类型时，首先包括最详细的类型，然后是不太详细的类型
             class CarItem(BaseItem):
                 type = "car"
@@ -220,12 +233,14 @@ Query 和 Path 和 Body 和 Field 参数
                 type = "plane"
                 size: int
             @app.get("/items/{item_id}", response_model=Union[PlaneItem, CarItem])
+        
         Dict，如果你事先不知道有效的字段/属性名称（对于 Pydantic 模型是必需的），这将很有用。
             @app.get("/keyword-weights/", response_model=Dict[str, float])
+
     装饰器中响应体相关参数
-        response_model_exclude_defaults=True 使用 response_model_exclude_unset 来仅返回显式设定的值
+        response_model_exclude_defaults=True 
         response_model_exclude_none=True 
-        response_model_exclude_unset=True
+        response_model_exclude_unset=True  // 使用 response_model_exclude_unset 来仅返回显式设定的值
         response_model_include 和 response_model_exclude
             它们接收一个由属性名称 str 组成的 set 或 list 或 tuple 来包含（忽略其他的）或者排除（包含其他的）这些属性。
 ----------
@@ -238,7 +253,10 @@ form表单是“键值对”的数据格式，例如：
     a=1&b=2&c=3
 而json格式则与之不同，如下：
     {"a":1,"b":2,"c":3}
-传递的数据比较简单，那么两种方式基本上没什么大区别（当然后台接收数据的方式肯定是不同的），但是如果数据比较复杂，比如包含数组、对象等时，就只有json才能胜任了。此外，如果数据是通过表单提交的，那么当然使用默认的form即可，因为它会自动构建数据结构，无需手工拼接；而如果是通过ajax发送数据，则最好使用json，因为可以通过简单的方法把对象转换为json字串。
+传递的数据比较简单，那么两种方式基本上没什么大区别（当然后台接收数据的方式肯定是不同的），
+如果数据比较复杂，比如包含数组、对象等时，就只有json才能胜任了。
+此外，如果数据是通过表单提交的，那么当然使用默认的form即可，因为它会自动构建数据结构，无需手工拼接；
+而如果是通过ajax发送数据，则最好使用json，因为可以通过简单的方法把对象转换为json字串。
 ----------
 表单Form（Body子类）
     安装
@@ -254,7 +272,6 @@ form表单是“键值对”的数据格式，例如：
     与使用 Query、Path 和 Body 在路径操作函数中声明额外的校验和元数据的方式相同
 ----------
 Data from forms is normally encoded using the "media type" application/x-www-form-urlencoded.
-
 But when the form includes files, it is encoded as multipart/form-data.
 ----------
 文件File（Form子类）
@@ -281,7 +298,7 @@ But when the form includes files, it is encoded as multipart/form-data.
             content_type
             file：a SpooledTemporaryFile (a file-like object).
                   This is the actual Python file that you can pass directly to other functions or libraries that expect a "file-like" object
-        异步方法(必需await，e.g. contents = await myfile.read()，如果非同步函数中，contents = myfile.file.read())
+        异步方法(必需await，e.g. contents = await myfile.read()，在非同步函数中，contents = myfile.file.read())
             write(data)
             read(size)
             seek(offset)
@@ -322,7 +339,6 @@ But when the form includes files, it is encoded as multipart/form-data.
                 status_code=418,
             )
 
-
         @app.get("/unicorns/{name}")
         async def read_unicorn(name: str):
             raise CustomException(name=name)
@@ -347,37 +363,33 @@ But when the form includes files, it is encoded as multipart/form-data.
                 content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
             )
 
-        class Item(BaseModel):
-            title: str
-            size: int
-
-        @app.post("/items/")
-        async def create_item(item: Item):
-            return item
     FastAPI HTTPException 继承自 Starlette's HTTPException。
-        唯一的区别是，FastAPI HTTPException允许你在response添加头信息。主要在内部用于OAuth 2.0以及一些安全相关的功能。
+        FastAPI HTTPException允许你在response添加头信息，主要用于OAuth 2.0以及一些安全相关的功能。
         因此，通常我们在代码中抛出FastAPI HTTPException异常。
         但是，当我们注册异常处理器的时候，我们应该注册为Starlette HTTPException。
-        这样，当Starlette的内部代码或者Starlette扩展插件抛出Starlette HTTPException时，我们的处理器才能正常捕获和处理这个异常。
+        尽管注册的是Starlette HTTPException处理器，抛出HTTPException异常依然捕获得到。
         如果我们要在代码中同时使用这两个类，为了避免命名冲突，我们可以重命名其中一个类。
         from fastapi import HTTPException
         from starlette.exceptions import HTTPException as StarletteHTTPException
+
     使用默认handler
         from fastapi.exception_handlers import (
             http_exception_handler,
-            request_validation_exception_handler,
         )
+        from starlette.exceptions import HTTPException as StarletteHTTPException
 
         @app.exception_handler(StarletteHTTPException)
         async def custom_http_exception_handler(request, exc):
             print(f"OMG! An HTTP error!: {repr(exc)}")
+            print(type(exc))  # <class 'fastapi.exceptions.HTTPException'>
             return await http_exception_handler(request, exc)
-
-
-        @app.exception_handler(RequestValidationError)
-        async def validation_exception_handler(request, exc):
-            print(f"OMG! The client sent invalid data!: {exc}")
-            return await request_validation_exception_handler(request, exc)
+        @app.get("/items/{item_id}")
+        async def read_item(item_id: int):
+            if item_id == 3:
+                raise HTTPException(status_code=418, detail="Nope! I don't like 3.")
+            return {"item_id": item_id}
+        In this example, you are just printing the error with a very expressive message.
+        But you get the idea, you can use the exception and then just re-use the default exception handlers.
 ----------
 路径配置
     tags
@@ -415,17 +427,18 @@ But when the form includes files, it is encoded as multipart/form-data.
         @app.get("/items/", include_in_schema=False)
 ----------
 jsonable_encoder
-    There are some cases where you might need to convert a data type (like a Pydantic model) to something compatible with JSON (like a dict, list, etc). The result of calling it is something that can be encoded with the Python standard json.dumps().
+    convert a data type (like a Pydantic model) to something compatible with JSON (like a dict, list, etc).
+    The result of calling it is something that can be encoded with the Python standard json.dumps().
 ----------
 替换更新PUT
 部分更新PATCH
     @app.patch("/items/{item_id}", response_model=Item)
     async def update_item(item_id: str, item: Item):
-        stored_item_data = items[item_id]
+        stored_item_data = items[item_id]  # get data from database
         stored_item_model = Item(**stored_item_data)
         update_data = item.dict(exclude_unset=True)
         updated_item = stored_item_model.copy(update=update_data)
-        items[item_id] = jsonable_encoder(updated_item)
+        items[item_id] = jsonable_encoder(updated_item)  # save to database
         return updated_item
 
     In summary, to apply partial updates you would:
@@ -469,20 +482,21 @@ jsonable_encoder
             #简写
             async def read_items(commons: CommonQueryParams = Depends()):
         # 装饰器里使用依赖注入
+        # 装饰器里依赖不会用到返回值，适合执行流程类函数
             async def verify_token(x_token: str = Header(...)):
                 if x_token != "fake-super-secret-token":
                     raise HTTPException(status_code=400, detail="X-Token header invalid")
-
 
             async def verify_key(x_key: str = Header(...)):
                 if x_key != "fake-super-secret-key":
                     raise HTTPException(status_code=400, detail="X-Key header invalid")
                 return x_key
-            # 装饰器里依赖不会用到返回值，适合执行流程类函数
+
             @app.get("/items/", dependencies=[Depends(verify_token), Depends(verify_key)])
             
     全局依赖
         app = FastAPI(dependencies=[Depends(verify_token), Depends(verify_key)])
+
     依赖 with yield
         async def get_db():
             db = DBSession()
@@ -490,7 +504,8 @@ jsonable_encoder
                 yield db  # 响应前部分
             finally:
                 db.close()  # 响应后部分
-                
+
+    依赖 上下文管理器            
         class MySuperContextManager:
             def __init__(self):
                 self.db = DBSession()
@@ -511,14 +526,18 @@ jsonable_encoder
 ----------
 安全
     生成token
-        @app.post("/token")  # token 端点的响应必须是一个 JSON 对象。
-        async def login(form_data: OAuth2PasswordRequestForm = Depends()):  # OAuth2PasswordRequestForm一个包含username和password的表单
+        @app.post("/token")  # 响应必须是一个 JSON 对象。
+        async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+            # OAuth2PasswordRequestForm一个包含username和password的表单
             return {"access_token": user.username, "token_type": "bearer"}
             # 包含access_token和token_type的JSON对象，固定值，必须有
-    从header中获得token
+    
+    前端发送带有token的header
+
+    依赖注入 OAuth2PasswordBearer，从header中提取token
         oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
         # OAuth2PasswordBearer use OAuth2, with the Password flow, using a Bearer token
-        #tokenUrl对应获得token的路径
+        # tokenUrl对应获得token的路径
             async def read_items(token: str = Depends(oauth2_scheme)):
                 
     jwt令牌
@@ -536,7 +555,25 @@ jsonable_encoder
             to_encode.update({"exp": expire})
             encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
             return encoded_jwt
-        
+                @app.post("/token", response_model=Token)
+
+        async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+            user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Incorrect username or password",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(
+                data={"sub": user.username}, expires_delta=access_token_expires
+            )
+            # JWT 的规范中提到有一个 sub 键，值为该令牌的主题。
+            # 为了避免 ID 冲突，当为用户创建 JWT 令牌时，你可以在 sub 键的值前加上前缀，例如 username:
+            # sub 键在整个应用程序中应该有一个唯一的标识符，而且应该是一个字符串
+            return {"access_token": access_token, "token_type": "bearer"}
+            
         async def get_current_user(token: str = Depends(oauth2_scheme)):
             credentials_exception = HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -555,43 +592,39 @@ jsonable_encoder
             if user is None:
                 raise credentials_exception
             return user
-        
-        @app.post("/token", response_model=Token)
-        async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-            user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Incorrect username or password",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-            access_token = create_access_token(
-                data={"sub": user.username}, expires_delta=access_token_expires
-            )
-            # 为了避免 ID 冲突，当为用户创建 JWT 令牌时，你可以在 sub 键的值前加上前缀，例如 username:
-            # sub 键在整个应用程序中应该有一个唯一的标识符，而且应该是一个字符串
-            return {"access_token": access_token, "token_type": "bearer"}
+
+        @app.get("/users/me/", response_model=User)
+        async def read_users_me(current_user: User = Depends(get_current_user)):
+            return current_user
+
+        使用 scopes 的进阶用法
+            OAuth2 具有「作用域」的概念。
+            你可以使用它们向 JWT 令牌添加一组特定的权限。
+            然后，你可以将此令牌直接提供给用户或第三方，使其在一些限制下与你的 API 进行交互。
 
     哈希并校验密码
         pip install passlib[bcrypt]
         from passlib.context import CryptContext
+
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
+        def get_password_hash(password):
+            return pwd_context.hash(password)
         def verify_password(plain_password, hashed_password):
             return pwd_context.verify(plain_password, hashed_password)
 ----------
 中间件
     "中间件"是一个函数,它在每个请求被特定的路径操作处理之前,以及在每个响应返回之前工作.
     在函数的顶部使用装饰器 @app.middleware("http").
+    The middleware has to be an async function.
     中间件参数接收如下参数:
-        request.
-    一个函数 call_next 它将接收 request 作为参数.
-    这个函数将 request 传递给相应的 路径操作.
-    然后它将返回由相应的路径操作生成的 response.
-    然后你可以在返回 response 前进一步修改它.
+        request
+        call_next：它将接收 request 作为参数.
+        这个函数将 request 传递给相应的 路径操作.
+        然后它将返回由相应的路径操作生成的 response.
+        然后你可以在返回 response 前进一步修改它.
 
     import time
-
     from fastapi import FastAPI, Request
 
     app = FastAPI()
@@ -604,9 +637,6 @@ jsonable_encoder
         response.headers["X-Process-Time"] = str(process_time)  # 请记住可以 用'X-' 前缀添加专有自定义请求头.
         return response
 
-        def get_password_hash(password):
-            return pwd_context.hash(password)
-        
     一些中间件
         HTTPSRedirectMiddleware
             Enforces that all incoming requests must either be https or wss.        
@@ -616,11 +646,7 @@ jsonable_encoder
         GZipMiddleware
             Handles GZip responses for any request that includes "gzip" in the Accept-Encoding header.
             The middleware will handle both standard and streaming responses.
-    使用 scopes 的进阶用法
-        OAuth2 具有「作用域」的概念。
-        你可以使用它们向 JWT 令牌添加一组特定的权限。
-        然后，你可以将此令牌直接提供给用户或第三方，使其在一些限制下与你的 API 进行交互。
-----------
+    ----------
 CORS
     前后端不同源，允许发送请求
         from fastapi.middleware.cors import CORSMiddleware
@@ -682,33 +708,20 @@ SQL (Relational) Databases  # TODO
 ----------
 BackgroundTasks
     使用
-        from fastapi import BackgroundTasks, FastAPI
+        from fastapi import BackgroundTasks
 
-        app = FastAPI()
-
-        def write_notification(email: str, message=""):
-            with open("log.txt", mode="w") as email_file:
-                content = f"notification for {email}: {message}"
-                email_file.write(content)
-
-        @app.post("/send-notification/{email}")
-        async def send_notification(email: str, background_tasks: BackgroundTasks):
-            background_tasks.add_task(write_notification, email, message="some notification")
-            return {"message": "Notification sent in the background"}
-    依赖注入
         def write_log(message: str):
             with open("log.txt", mode="a") as log:
                 log.write(message)
 
-
         def get_query(background_tasks: BackgroundTasks, q: Optional[str] = None):  
-            # FastAPI will also inject parameters from the request into your dependencies, and include them into the OpenApi specification.
+            # FastAPI will also inject parameters from the request into your dependencies,
+            # and include them into the OpenApi specification.
             if q: 
                 print(id(q))  # same id
                 message = f"found query: {q}\n"
                 background_tasks.add_task(write_log, message)
             return q
-
 
         @app.post("/send-notification/{email}")
         async def send_notification(
@@ -744,35 +757,36 @@ BackgroundTasks
         app = FastAPI()
 
         app.mount("/static", StaticFiles(directory="static"), name="static")
-        # name参数fastapi内部使用，/static mount url
+        # name参数fastapi内部使用
     
     What is "Mounting"
 
         "Mounting" means adding a complete "independent" application in a specific path, that then takes care of handling all the sub-paths.
 
-        This is different from using an APIRouter as a mounted application is completely independent. The OpenAPI and docs from your main application won't include anything from the mounted application, etc.
+        This is different from using an APIRouter as a mounted application is completely independent.
+        The OpenAPI and docs from your main application won't include anything from the mounted application, etc.
 ----------
 测试
     # api
-    @app.get("/")
-    async def read_main():
-        return {"msg": "Hello World"}
+        @app.get("/")
+        async def read_main():
+            return {"msg": "Hello World"}
     # test
-    from fastapi.testclient import TestClient
-    from .main import app
+        from fastapi.testclient import TestClient
+        from .main import app
 
-    client = TestClient(app)
+        client = TestClient(app)
 
-    def test_read_main():
-        response = client.get("/")
-        assert response.status_code == 200
-        assert response.json() == {"msg": "Hello World"}
+        def test_read_main():
+            response = client.get("/")
+            assert response.status_code == 200
+            assert response.json() == {"msg": "Hello World"}
     client参数
         To pass a path or query parameter, add it to the URL itself.
-        To pass a JSON body, pass a Python object (e.g. a dict) to the parameter json.
-        If you need to send Form Data instead of JSON, use the data parameter instead.
-        To pass headers, use a dict in the headers parameter.
-        For cookies, a dict in the cookies parameter.
+        To pass a JSON body, pass a Python object (e.g. a dict) to the parameter 'json'.
+        If you need to send Form Data instead of JSON, use the data parameter 'instead'.
+        To pass headers, use a dict in the 'headers' parameter.
+        For cookies, a dict in the 'cookies' parameter.
     执行
         $ pip install pytest
         $ pytest
@@ -794,7 +808,7 @@ BackgroundTasks
             item = items[item_id]
             item["name"] = name
             item["size"] = size
-            return item  # 返回200
+            return item  # 默认返回200
         else:
             item = {"name": name, "size": size}
             items[item_id] = item
@@ -813,7 +827,7 @@ BackgroundTasks
         def update_item(id: str, item: Item):
             json_compatible_item_data = jsonable_encoder(item)
             return JSONResponse(content=json_compatible_item_data)
-    自定义返回xml响应
+    修改响应头，返回xml
         from fastapi import FastAPI, Response
         app = FastAPI()
 
@@ -944,4 +958,210 @@ Parameterized dependencies
     def read_root(item_id: str, request: Request):
         client_host = request.client.host
         return {"client_host": client_host, "item_id": item_id}
+----------
+Including WSGI - Flask, Django, others
+    from fastapi import FastAPI
+    from fastapi.middleware.wsgi import WSGIMiddleware  # 1
+    from flask import Flask, escape, request
+
+    flask_app = Flask(__name__)
+
+    @flask_app.route("/")
+    def flask_main():
+        name = request.args.get("name", "World")
+        return f"Hello, {escape(name)} from Flask!"
+
+    app = FastAPI()
+
+    @app.get("/v2")
+    def read_main():
+        return {"message": "Hello World"}
+
+    app.mount("/v1", WSGIMiddleware(flask_app))  # 2
+
+    Now, every request under the path /v1/ will be handled by the Flask application.
+    If you run it with Uvicorn and go to http://localhost:8000/v1/ you will see the response from Flask:
+        Hello, World from Flask!
+    And if you go to http://localhost:8000/v2 you will see the response from FastAPI:
+        {
+            "message": "Hello World"
+        }
+----------
+回调函数
+    场景：
+        外部调用create_invoice接口后，系统通过设置callbacks自动调用invoice_notification回调函数
+    from fastapi import APIRouter, FastAPI
+    from pydantic import BaseModel, HttpUrl
+
+    app = FastAPI()
+
+    class Invoice(BaseModel):
+        id: str
+        title: Optional[str] = None
+        customer: str
+        total: float
+
+    class InvoiceEvent(BaseModel):
+        description: str
+        paid: bool
+
+    class InvoiceEventReceived(BaseModel):
+        ok: bool
+
+    invoices_callback_router = APIRouter()  # 回调函数用的router
+
+
+    @invoices_callback_router.post(
+        "{$callback_url}/invoices/{$request.body.id}", response_model=InvoiceEventReceived
+    )
+    # The callback path can have an OpenAPI 3 expression that can contain parts of the original request(create_invoice) sent to your API.
+    def invoice_notification(body: InvoiceEvent):
+        pass
+
+
+    @app.post("/invoices/", callbacks=invoices_callback_router.routes)  # pass the attribute .routes
+    def create_invoice(invoice: Invoice, callback_url: Optional[HttpUrl] = None):
+        return {"msg": "Invoice received"}
+----------
+环境变量
+    你可以设置临时的环境变量针对一次函数调用
+        # print_my_name.py
+            name = os.getenv("MY_NAME", "World")
+            print(f"Hello {name} from Python")    
+        $ MY_NAME="Wade Wilson" python print_my_name.py
+设置项
+    读取环境变量，转换类型并校验数据
+        from pydantic import BaseSettings
+
+        class Settings(BaseSettings):
+            app_name: str = "Awesome API"
+            admin_email: str
+            items_per_user: int = 50
+
+    In some occasions it might be useful to provide the settings from a dependency, instead of having a global object with settings that is used everywhere.
+    This could be especially useful during testing, as it's very easy to override a dependency with your own custom settings.
+        from functools import lru_cache
+        from fastapi import Depends, FastAPI
+        from . import config
+        app = FastAPI()
+
+        @lru_cache()
+        def get_settings():
+            return config.Settings()
+
+        @app.get("/info")
+        async def info(settings: config.Settings = Depends(get_settings)):
+
+    override settings during testing
+        from fastapi.testclient import TestClient
+        from . import config, main
+
+        client = TestClient(main.app)
+
+        def get_settings_override():
+            return config.Settings(admin_email="testing_admin@example.com")
+
+        main.app.dependency_overrides[main.get_settings] = get_settings_override
+
+    .env
+        class Settings(BaseSettings):
+            app_name: str = "Awesome API"
+            admin_email: str
+            items_per_user: int = 50
+
+            class Config:
+                env_file = ".env"
+----------
+异步测试
+    pip install pytest-asyncio
+    pip install httpx
+
+        import pytest
+        from httpx import AsyncClient  # 类似requests，异步的
+
+        from .main import app
+
+
+        @pytest.mark.asyncio  # 告诉pytest这是个异步函数
+        async def test_root():
+            async with AsyncClient(app=app, base_url="http://test") as ac:
+                response = await ac.get("/")
+            assert response.status_code == 200
+            assert response.json() == {"message": "Tomato"}
+----------
+Events: startup - shutdown
+    可以在应用启动前或者关闭的时候定义事件处理器
+        app = FastAPI()
+
+        items = {}
+
+        @app.on_event("startup")
+        async def startup_event():
+            items["foo"] = {"name": "Fighters"}
+            items["bar"] = {"name": "Tenders"}
+
+        @app.on_event("shutdown")
+        def shutdown_event():
+            with open("log.txt", mode="a") as log:
+                log.write("Application shutdown")
+
+        @app.get("/items/{item_id}")
+        async def read_items(item_id: str):
+            return items[item_id]
+----------
+WebSocket
+    from fastapi import WebSocket
+    class ConnectionManager:
+        def __init__(self):
+            self.active_connections: List[WebSocket] = []
+
+        async def connect(self, websocket: WebSocket):
+            await websocket.accept()
+            self.active_connections.append(websocket)
+
+        def disconnect(self, websocket: WebSocket):
+            self.active_connections.remove(websocket)
+
+        async def send_personal_message(self, message: str, websocket: WebSocket):
+            await websocket.send_text(message)
+
+        async def broadcast(self, message: str):
+            for connection in self.active_connections:
+                await connection.send_text(message)
+
+    @app.websocket("/ws/{client_id}")  # url
+    async def websocket_endpoint(websocket: WebSocket, client_id: int):  # 定义普通的路径操作函数
+        await manager.connect(websocket)
+        try:
+            while True:
+                data = await websocket.receive_text()
+                await manager.send_personal_message(f"You wrote: {data}", websocket)
+                await manager.broadcast(f"Client #{client_id} says: {data}")
+        except WebSocketDisconnect:
+            manager.disconnect(websocket)
+            await manager.broadcast(f"Client #{client_id} left the chat")
+    # When a WebSocket connection is closed,
+    # the await websocket.receive_text() will raise a WebSocketDisconnect exception
+----------
+Behind a Proxy
+    In some situations, you might need to use a proxy server like Traefik or Nginx with a configuration that adds an extra path prefix that is not seen by your application.
+    Having a proxy with a stripped path prefix,
+    in this case, means that you could declare a path at /app in your code,
+    but then, you add a layer on top (the proxy) that would put your FastAPI application under a path like /api/v1.
+    In this case, the original path /app would actually be served at /api/v1/app.
+    Even though all your code is written assuming there's just /app.
+    And the proxy would be "stripping" the path prefix on the fly before transmitting the request to Uvicorn, keep your application convinced that it is serving at /app, so that you don't have to update all your code to include the prefix /api/v1.
+
+    Up to here, everything would work as normally.
+
+    But then, when you open the integrated docs UI (the frontend), it would expect to get the OpenAPI schema at /openapi.json, instead of /api/v1/openapi.json.
+
+    So, the frontend (that runs in the browser) would try to reach /openapi.json and wouldn't be able to get the OpenAPI schema.
+
+    Because we have a proxy with a path prefix of /api/v1 for our app, the frontend needs to fetch the OpenAPI schema at /api/v1/openapi.json.
+    By use root_path
+        uvicorn main:app --root-path /api/v1
+        or app = FastAPI(root_path="/api/v1")
+
+    Uvicorn will expect the proxy to access Uvicorn at http://127.0.0.1:8000/app, and then it would be the proxy's responsibility to add the extra /api/v1 prefix on top.
 ----------

@@ -89,8 +89,6 @@ Go 拥有指针。指针保存了值的内存地址。
     fmt.Println(a)
 
     primes := [6]int{2, 3, 5, 7, 11, 13}
-
-cap()函数返回的是数组切片分配的空间大小
 ----------
 二维数组：
     func main() {
@@ -118,10 +116,21 @@ cap()函数返回的是数组切片分配的空间大小
         O _ X
         _ _ O
 ----------
-映射的文法与结构体相似，不过必须有键名：
-    可以通过将键和值的类型传递给内置函数 make 来创建一个 map。语法为：make(map[KeyType]ValueType)。(译者注：map 的类型表示为 map[KeyType]ValueType)，例如：
-    personSalary := make(map[string]int)
-上面的代码创建了一个名为 personSalary 的 map。其中键的类型为 string，值的类型为 int。
+切片
+    var identifier []type  // 切片不需要说明长度
+    slice1 := make([]type, length, capacity)
+    append
+        var numbers []int
+        append(numbers, 1)
+        append(numbers, 2,3,4)
+    copy
+        new_numbers := make([]int, len(numbers), (cap(numbers))*2)
+        copy(new_numbers, numbers)
+----------
+map
+    语法为：make(map[KeyType]ValueType)，例如：
+    m := make(map[string]int)
+    上面的代码创建了一个名为 m 的 map。其中键的类型为 string，值的类型为 int。
 
 修改映射
 在映射 m 中插入或修改元素：
@@ -137,10 +146,48 @@ cap()函数返回的是数组切片分配的空间大小
 注 ：若 elem 或 ok 还未声明，你可以使用短变量声明：
     elem, ok := m[key]
 ----------
+&符号表示对变量取地址，得到一个指针
+*符号有两种用法
+    如果*后面跟的是指针，则表示对指针取值，即得到指针指向的值
+    如果*后面跟的是类型，则表示一个指向该类型的指针。
+----------
+结构体
+    定义
+        type Books struct {
+            title string
+            author string
+            subject string
+            book_id int
+        }
+        func main() {
+
+            // 创建一个新的结构体
+            fmt.Println(Books{"Go 语言", "www.runoob.com", "Go 语言教程", 6495407})
+
+            // 也可以使用 key => value 格式
+            fmt.Println(Books{title: "Go 语言", author: "www.runoob.com", subject: "Go 语言教程", book_id: 6495407})
+
+            // 忽略的字段为 0 或 空
+            fmt.Println(Books{title: "Go 语言", author: "www.runoob.com"})
+        }
+    访问结构体成员
+        结构体.成员名
+    结构体指针
+        你可以定义指向结构体的指针类似于其他指针变量，格式如下：
+            var struct_pointer *Books
+        以上定义的指针变量可以存储结构体变量的地址。查看结构体变量地址，可以将 & 符号放置于结构体变量前：
+            struct_pointer = &Book1
+        使用结构体指针访问结构体成员，使用 "." 操作符：
+            struct_pointer.title  // 同(*struct_pointer).title
+----------
 方法：
-    Go 没有类。不过你可以为结构体类型定义方法。
+    Go 没有类。不过你可以为 结构体 类型定义方法。
     方法就是一类带特殊的 接收者 参数的函数。方法接收者在它自己的参数列表内，位于 func 关键字和方法名之间。
     在此例中，Abs 方法拥有一个名为 v，类型为 Vertex 的接收者。
+    格式
+        func (variable_name variable_datatype) function_name() [return_type]{
+            /* 函数体*/
+        }
 
     type Vertex struct {
         X, Y float64
@@ -154,6 +201,94 @@ cap()函数返回的是数组切片分配的空间大小
         v := Vertex{3, 4}
         fmt.Println(v.Abs())
     }
+----------
+接口
+    接口可以理解为某一个方面的抽象，可以是多对一的(多个类型实现一个接口)，这也是多态的体现
+    type name interface {
+        method1name() [return_type]
+        method2name() [return_type]
+    }
+    e.g.
+        type Phone interface {
+            call()
+        }
+        type NokiaPhone struct {
+        }
+        func (nokiaPhone NokiaPhone) call() {
+            fmt.Println("I am Nokia, I can call you!")
+        }
+        type IPhone struct {
+        }
+        func (iPhone IPhone) call() {
+            fmt.Println("I am iPhone, I can call you!")
+        }
+        为了成功实现接口，您需要实现接口声明的所有方法
+----------
+接口断言
+    检查接口类型变量的值是否实现了期望的接口
+    把接口类型变量的值转换为其他类型或其他接口
+    格式
+        1，t := i.(T)
+
+            * 断言成功，则t为T类型的接口值
+            * 断言失败则报错，panic
+
+        2，v,ok := i.(T)
+
+            * 断言成功，则v为T类型的接口值，ok为true
+            * 断言失败，则v为空值，ok为false
+
+        3，type-switch
+
+            switch 接口变量.(type) {
+                case 类型1:
+                    // 变量是类型1时的处理
+                case 类型2:
+                    // 变量是类型2时的处理
+                case nil :
+                    // 空接口进入此流程
+                …
+                default:
+                    // 变量不是所有case中列举的类型时的处理
+            }
+    e.g.
+        type Walker interface {
+            walk()
+        }
+        type Swimer interface {
+            swim()
+        }
+
+        type Dog struct {
+        }
+        type Duck struct {
+        }
+
+        func (d Dog) walk() {
+            fmt.Println("Dog avalible Walk")
+        }
+
+        func (d Duck) walk(){
+            fmt.Println("Duck avalible Walk")
+        }
+        func (d Duck) swim(){
+            fmt.Println("Duck avalible Swim")
+        }
+
+        var s Walker
+        s = new(Duck)
+        // 由于s类型为Walker，可赋值为实现Walker接口的Duck实例，但是无法调用Duck的swim方法
+        ss := s.(Swimer)
+        ss.swim()  // 转换为Swimer类型，可调用swim
+----------
+The two functions below are equivalent. One's just a little more concise:
+
+func newInt1() *int { return new(int) }
+
+func newInt2() *int {
+    var i int
+    return &i
+}
 ----------
 你可以为指针接收者声明方法。
 
@@ -240,3 +375,4 @@ p.Scale(10) // OK
 首先，方法能够修改其接收者指向的值。
 
 其次，这样可以避免在每次调用方法时复制该值。若值的类型为大型结构体时，这样做会更加高效。
+----------
