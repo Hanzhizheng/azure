@@ -19,7 +19,7 @@ alembic
                 config.set_main_option('sqlalchemy.url', os.getenv('SQLALCHEMY_DATABASE_URL'))
 
     3. alembic revision --autogenerate -m "message"
-    4. alembic upgrade/downgrade head
+    4. 使用alembic upgrade head将刚刚生成的迁移文件，真正映射到数据库中。同理，如果要降级，那么使用alembic downgrade head。
         alembic downgrade base # back to beginning
 
 ----------

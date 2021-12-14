@@ -1,0 +1,220 @@
+----------
+类型提示
+    作用
+        检查类型错误
+        补全，如x: str，则x. tab会自动补全str的方法
+    类型
+        简单类型：str，int，float，bool，bytes
+        嵌套类型：from typing import Dict, List, Set, Tuple
+        类作为类型
+
+----------
+协程
+    定义
+        也叫微线程，是一种用户态内的上下文切换技术，其实就是通过一个线程实现代码块相互切换执行
+    实现方式
+        1. greenlet, gevent;
+            from greenlet import greenlet
+            def func1():
+                print(1)
+                gr2.switch()  # 第二步，切换到func2
+                print(2)    # 第四步
+                gr2.switch()  # 第五步，切换到func2，从func2上一次位置继续执行
+
+            def func2():
+                print(3)
+                gr1.switch()  # 第三步，切换到func1，从func1上一次位置继续执行
+                print(4)    # 第六步
+
+            gr1 = greenlet(func1)
+            gr2 = greenlet(func2)
+            gr1.switch()  # 第一步，线程切换到func1执行
+
+        2. yield
+            def func1():
+                yield 1
+                yield from func2()    # 跳到func2执行
+                yield 2
+            def func2():
+                yield 3
+                yield 4
+
+            f1 = func1()
+            for i in f1:
+                print(i)    # out: 1, 3, 4, 2
+
+        3. asyncio装饰器(v>3.4)
+            import asyncio
+            @asyncio.coroutine    # 将普通函数变成协程函数，协程函数不能直接调用
+            def func1():
+                print(1)
+                yield from asyncio.sleep(5)    # 遇到io耗时操作，*自动切换*到tasks中的其他任务
+                print(2)
+            @asyncio.coroutine
+            def func2():
+                print(3)
+                yield from asyncio.sleep(5)    # 遇到io耗时操作，*自动切换*到tasks中的其他任务
+                print(4)
+
+            tasks = [
+                asyncio.ensure_future(func1()),
+                asyncio.ensure_future(func2()),
+            ]
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(asyncio.wait(tasks))
+
+        4. async & await关键字(v>3.5, 推荐方式)
+            async def func1():
+                print(1)
+                await asyncio.sleep(5)
+                print(2)
+            async def func2():
+                print(3)
+                await asyncio.sleep(5)
+                print(4)
+            
+            tasks = [
+                asyncio.ensure_future(func1()),
+                asyncio.ensure_future(func2()),
+            ]
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(asyncio.wait(tasks))
+
+    协程函数：async def 函数名
+    协程对象：执行 协程函数() 得到协程对象，代码并不执行，需要借助事件循环，把协程对象当成任务添加到事件循环中，由事件循环执行
+    事件循环
+        定义
+            任务列表 = [任务1，任务2，任务3。。。]
+            while True:
+                可执行的任务列表，已完成的任务列表 =  去任务列表检查所有任务，将可执行和已完成的任务返回。  # 可执行是指异步任务完成了io请求得到了数据。
+            for 可执行任务 in 可执行的任务列表:
+                处理可执行任务后续逻辑
+            for 已完成任务 in 已完成的任务列表:
+                在任务列表中删除 已完成任务
+            如果任务列表中任务都已完成，则终止循环
+    快速上手
+        async def func():
+            pass
+        result = func()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(result)
+        v > 3.7
+            asyncio.run(result)  # 相当于上面俩句代码
+    await
+        await 只能跟可等待对象，包括
+            协程对象
+            Future
+            Task对象
+    Task:
+        定义
+            通过asyncio.create_task(协程对象)创建Task对象，并加入到事件循环中等待被调度执行(v > 3.7)，
+            asyncio.ensure_future 是3.7之前的方式。
+        
+        示例1
+            async def func():
+                await asyncio.sleep(1)
+            async def main():
+                task1 = asyncio.create_task(func())
+                task2 = asyncio.create_task(func())
+                # 遇到io自动切换其他任务
+                # await等待对应的协程全都执行完毕并获取结果
+                res1 = await task1
+                res2 = await task2
+                print(res1, res2)
+            asyncio.run(main())
+        
+        示例2(常用方式)
+            async def main():
+                tasks = [asyncio.create_task(func()), asyncio.create_task(func())]
+                # await不能直接跟列表，所以用asyncio.wait转成协程对象
+                # asyncio.wait 可接timeout参数，超时未完成的进入pending集合
+                done, pending = await asyncio.wait(tasks)
+
+    asyncio.Future(底层基本不用, Task类基类): 代表结果
+        await实际上是在等待Task底层的Future对象取得结果，如果是一个空的Future，await将一直等待。
+            async def set_after(future):
+                await asyncio.sleep(1)
+                future.set_result("result")
+            async def main():
+                loop = asyncio.get_event_loop()
+                # 创建一个任务(Future对象)
+                future = loop.create_future()
+                # await等待直到1s后手动给future赋值完成
+                await loop.create_task(set_after(future))
+                # 由于future此时有值，await将不会卡在这里
+                data = await future
+                print(data)
+            asyncio.run(main())
+
+    concurrent.futures.Future(与asyncio.Future无关)
+        使用线程池或进程池实现异步操作时用的对象
+        from concurrent.futures.thread import ThreadPoolExecutor
+        from concurrent.futures.process import ProcessPoolExecutor
+        def func(value):
+            time.sleep(1)
+            print(value)
+            return value
+        pool = ThreadPoolExecutor(max_workers=5)
+        for i in range(10):
+            future = pool.submit(func, i)
+            print(future)
+    
+    aysncio + concurrent (基于协程异步结合基于进程或线程的异步，比如某第三方模块不支持协程异步时)
+        示例1
+            def func():
+                time.sleep(1)
+            async def main():
+                loop = aysncio.get_event_loop()
+                # run_in_executor
+                ## 创建一个默认的ThreadPoolExecutor，调用submit申请一个线程执行func函数，返回concurrent.futures.Future
+                ## 调用asyncio.wrap_future将concurrent.futures.Future包装成asyncio.Future
+                future = loop.run_in_executor(None, func)
+                result = await future
+                print(result)
+            asyncio.run(main())
+        示例2(使用自定义的池)
+            with ProcessPoolExecutor() as pool:
+                result = await loop.run_in_executor(pool, func)
+        案列：asyncio + requests
+        async def download(url):
+            loop = asyncio.get_event_loop()
+            future = loop.run_in_executor(None, requests.get, url)
+            response = await future
+            print(result)
+        urls = [url1, url2, urls]
+        tasks = [download(url) for url in urls]
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.wait(tasks))
+    
+    异步迭代器
+        定义
+            实现了__aiter__ 和 __anext__方法的对象，__anext__返回一个awaitable对象，async for 会处理异步迭代器的__anext__方法所返回的可等待对象
+        异步可迭代对象
+            定义
+                可在async for语句中使用的对象，必须通过它的__aiter__方法返回一个asynchronous iterator. 迭代器是一种特殊的可迭代对象，因为它实现了__aiter__
+
+        class Reader:
+            def __init__(self):
+                self.count = 0
+            async def readline(self):
+                await asyncio.sleep(1)
+                self.count += 1
+                return self.count
+            def __aiter__(self):
+                return self
+            async def __anext__(self):
+                val = await self.readline()
+                if val == None:
+                    raise StopAsyncIteration
+                return val
+        
+        async def func():
+            r = Reader()
+            async for i in r:  # async for 必须在协程函数内
+                print(i)
+        asyncio.run(func())
+    
+    异步上下文管理器
+        定义
+            
+----------

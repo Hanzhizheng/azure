@@ -1165,3 +1165,20 @@ Behind a Proxy
 
     Uvicorn will expect the proxy to access Uvicorn at http://127.0.0.1:8000/app, and then it would be the proxy's responsibility to add the extra /api/v1 prefix on top.
 ----------
+HTTPS
+    流程
+        https://howhttps.works/the-handshake/
+
+    HTTP/SSL/TLS
+        SSL is the original and now deprecated protocol created at Netscape in the mid 90s.
+        TLS is the new protocol for secured encryption on the web maintained by IETF.
+        SSL was renamed to TLS
+
+        HTTPS is just the HTTP protocol but with data encryption using SSL/TLS.
+
+    It is a common practice to have one program/HTTP server running on the server(the machine, host, etc.) and managing all the HTTPS parts:
+        sending the decrypted HTTP requests to the actual HTTP application running in the same server (the FastAPI application, in this case),
+        take the HTTP response from the application, encrypt it using the appropriate certificate and sending it back to the client using HTTPS.
+        This server is often called a TLS Termination Proxy.
+    
+     Let's Encrypt is a project from the Linux Foundation. It provides HTTPS certificates for free.
